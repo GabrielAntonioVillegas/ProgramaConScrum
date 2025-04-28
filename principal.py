@@ -8,7 +8,17 @@ import random
 import time
 import mysql.connector 
 from mysql.connector import Error
+#VARIABLES GLOBALES===============================
+vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 #FUNCIONES========================================
+def iniciarConexion(vectorConexion):
+    conexion = mysql.connector.connect(
+        host= vectorConexion[0],
+        user= vectorConexion[1],
+        password= vectorConexion[2],
+        database= vectorConexion[3]
+    )
+    return conexion
 #--------------------Centrar Pantalla
 def centrarPantalla(ancho,alto,app):
     ancho_pantalla = app.winfo_screenwidth()
@@ -89,24 +99,33 @@ def creacionPantalla_IniciarSesionOrganizador(app,fuente):
     ent_contra = Entry(app_Inse_Org)
     ent_contra.place(relx=0.5, y=270, anchor="center", width=200,height=25)
     #Boton
-    btn_ini = Button(app_Inse_Org,text="Continuar", font=(fuente, 12, "bold"))
+    btn_ini = Button(app_Inse_Org,text="Continuar", font=(fuente, 12, "bold"),
+                     command=partial(bd_InicioSesion_Organizador,ent_usu,ent_contra))
     btn_ini.place(relx=0.5, y=340, anchor="center", width=200, height=30)
 
-
-
     app.withdraw()
-
+#--------------------INICIAR SESION COMO ORGANIZADOR
 def bd_InicioSesion_Organizador(ent_usu, ent_contra):
     nombreUsuario = ent_usu.get()
-    ent_usu.delete(0,END)
+    #ent_usu.delete(0,END)
     ent_usu.focus_set()
 
     contrasena = ent_contra.get()
-    ent_contra.delete(0,END)
+    #ent_contra.delete(0,END)
+    conexion = iniciarConexion(vectorConexion)
 
-    
+    cursor = conexion.cursor()
+    consulta1 = "SELECT * FROM Organizador WHERE nombreUsuario = %s"
+    cursor.execute(consulta1,(nombreUsuario,))
 
+    resultado = cursor.fetchone()
+    if(resultado):
+        messagebox.showinfo(title= "Usuario Encontrado", message=("Se encontró el usuario "+nombreUsuario))
+    else:
+        messagebox.showerror(title= "Usuario No Encontrado", message=("No se encontró el usuario '"+nombreUsuario+ "' intente nuevamente"))
 
+    cursor.close()
+    conexion.close()
 #--------------------Pantalla Registrarse
 def creacionPantalla_Registrarse(app,fuente):
     app_Regis= Toplevel(app)
@@ -124,7 +143,9 @@ app.title("Menu Principal")
 centrarPantalla(500,500,app)
 #--------------Definicion de Fuentes
 fuente= ("Source Code Pro")
+#--------------Conexion a la Base de Datos
 
+ 
 creacionPantalla_Principal(app,fuente)
 
 app.mainloop()
