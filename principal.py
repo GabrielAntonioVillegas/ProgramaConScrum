@@ -12,14 +12,8 @@ from mysql.connector import Error
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 
 #FUNCIONES========================================
-def iniciarConexion(vectorConexion):
-    conexion = mysql.connector.connect(
-        host= vectorConexion[0],
-        user= vectorConexion[1],
-        password= vectorConexion[2],
-        database= vectorConexion[3]
-    )
-    return conexion
+
+#====================================[PANTALLAS]
 #--------------------Centrar Pantalla
 def centrarPantalla(ancho,alto,app):
     ancho_pantalla = app.winfo_screenwidth()
@@ -48,10 +42,6 @@ def creacionPantalla_Principal(app,fuente):
     btn_Regis = Button(app,text="Registrarse",font=(fuente,14,"bold"),
                        command=partial(creacionPantalla_Registrarse,app,fuente))
     btn_Regis.place(relx=0.5, y= 280, anchor="center", width=200)
-    #Iniciar Sesion como Organizador
-    btn_Inse_Org = Button(app,text="¿Es Organizador de Eventos? Inicie Sesion Aquí", font=(fuente,9), relief="ridge",
-                          command=partial(creacionPantalla_IniciarSesionOrganizador,app,fuente))
-    btn_Inse_Org.place(relx=0.5, y= 360, anchor="center")
 #--------------------Pantalla Iniciar Sesion
 def creacionPantalla_IniciarSesion(app,fuente):
     app_Inse= Toplevel(app)
@@ -75,34 +65,7 @@ def creacionPantalla_IniciarSesion(app,fuente):
     ent_contra.place(relx=0.5, y=270, anchor="center", width=200,height=25)
     #Boton
     btn_ini = Button(app_Inse,text="Continuar", font=(fuente, 12, "bold"), 
-                     command=partial(bd_InicioSesion_Usuario,ent_usu, ent_contra,app_Inse))
-    btn_ini.place(relx=0.5, y=340, anchor="center", width=200, height=30)
-
-    app.withdraw()
-#--------------------Pantalla Iniciar Sesion como Organizador
-def creacionPantalla_IniciarSesionOrganizador(app,fuente):
-    app_Inse_Org = Toplevel(app)
-    app_Inse_Org.title("Iniciar Sesion como Organizador") 
-    centrarPantalla(500,500,app_Inse_Org)
-
-    btn_volver = Button(app_Inse_Org, text="🡸", command=partial(cerrar_abrirVentanas,app_Inse_Org,app))
-    btn_volver.place(x=10,y=10)
-
-    lbl = Label(app_Inse_Org, text="Iniciar Sesión como\nOrganizador", font=(fuente,20,"bold"))
-    lbl.place(relx=0.5, y=100, anchor="center")
-    #Usuario
-    lbl_usu = Label(app_Inse_Org,text="Usuario", font=(fuente, 12))
-    lbl_usu.place(x=180, y=170, anchor="center")
-    ent_usu = Entry(app_Inse_Org)
-    ent_usu.place(relx=0.5, y=200, anchor="center", width=200,height=25)
-    #Contraseña
-    lbl_contra = Label(app_Inse_Org,text="Contraseña", font=(fuente, 12))
-    lbl_contra.place(x=190, y=240, anchor="center")
-    ent_contra = Entry(app_Inse_Org)
-    ent_contra.place(relx=0.5, y=270, anchor="center", width=200,height=25)
-    #Boton
-    btn_ini = Button(app_Inse_Org,text="Continuar", font=(fuente, 12, "bold"),
-                     command=partial(bd_InicioSesion_Organizador,ent_usu,ent_contra,app_Inse_Org))
+                     command=partial(bd_InicioSesion_Verificacion,ent_usu, ent_contra, app_Inse))
     btn_ini.place(relx=0.5, y=340, anchor="center", width=200, height=30)
 
     app.withdraw()
@@ -148,6 +111,54 @@ def creacionPantalla_Registrarse(app,fuente):
     btn_ini.place(relx=0.5, y=440, anchor="center", width=200, height=30)
 
     app.withdraw()
+#--------------------Pantalla Menu Organizador
+def creacionPantalla_MenuOrganizador(app,fuente,nombreUsuario):
+    app_MenuOrg = Toplevel(app)
+    app_MenuOrg.title("Sesion Organizador")
+    centrarPantalla(1000,500,app_MenuOrg)
+    #PANEL 1 (izquierda, el mas angosto)
+    panel1 = Frame(app_MenuOrg, bg="gainsboro")
+    panel1.place(x=0, width=200, height=500)
+    #PANEL 2 (derecha, el mas ancho)
+    panel2 = Frame(app_MenuOrg)
+    panel2.place(x=200, width=800, height=500)
+    #BOTON VOLVER
+    btn_volver = Button(app_MenuOrg, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuOrg,app))
+    btn_volver.place(x=10,y=10)
+    #COMPONENTES PARA EL PANEL 1
+    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), font=(fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=50, anchor="center")
+
+    #COMPONENTES PARA EL PANEL 2 
+#--------------------Pantalla Menu Usuario
+def creacionPantalla_MenuUsuario(app,fuente,nombreUsuario):
+    app_MenuUs = Toplevel(app)
+    centrarPantalla(1000,500,app_MenuUs)
+    app_MenuUs.title("Sesion Usuario")
+    #PANEL 1 (izquierda, el mas angosto)
+    panel1 = Frame(app_MenuUs, bg="gainsboro")
+    panel1.place(x=0, width=200, height=500)
+    #PANEL 2 (derecha, el mas ancho)
+    panel2 = Frame(app_MenuUs)
+    panel2.place(x=200, width=800, height=500)
+    #BOTON VOLVER
+    btn_volver = Button(app_MenuUs, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuUs,app))
+    btn_volver.place(x=10,y=10)
+    #COMPONENTES PARA EL PANEL 1
+    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), font=(fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=50, anchor="center")
+
+    #COMPONENTES PARA EL PANEL 2    
+
+#====================================[BASE DE DATOS]
+def iniciarConexion(vectorConexion):
+    conexion = mysql.connector.connect(
+        host= vectorConexion[0],
+        user= vectorConexion[1],
+        password= vectorConexion[2],
+        database= vectorConexion[3]
+    )
+    return conexion
 #--------------------REGISTRARSE 
 def bd_registrarse_usuario(ent_nombre, ent_ape, ent_mail, ent_contra, ent_usu):
 
@@ -211,116 +222,61 @@ def bd_registrarse_usuario(ent_nombre, ent_ape, ent_mail, ent_contra, ent_usu):
             conexion.close()
         except:
             pass
-#--------------------Pantalla Menu Organizador
-def creacionPantalla_MenuOrganizador(app,fuente,nombreUsuario):
-    app_MenuOrg = Toplevel(app)
-    centrarPantalla(1000,500,app_MenuOrg)
-    #PANEL 1 (izquierda, el mas angosto)
-    panel1 = Frame(app_MenuOrg, bg="gainsboro")
-    panel1.place(x=0, width=200, height=500)
-    #PANEL 2 (derecha, el mas ancho)
-    panel2 = Frame(app_MenuOrg)
-    panel2.place(x=200, width=800, height=500)
-    #BOTON VOLVER
-    btn_volver = Button(app_MenuOrg, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuOrg,app))
-    btn_volver.place(x=10,y=10)
-    #COMPONENTES PARA EL PANEL 1
-    lbl1 = Label(panel2, text=("¡Bienvenido "+nombreUsuario+"!"), font=(fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=50, anchor="center")
-
-    #COMPONENTES PARA EL PANEL 2 
-#--------------------Pantalla Menu Usuario
-def creacionPantalla_MenuUsuario(app,fuente,nombreUsuario):
-    app_MenuUs = Toplevel(app)
-    centrarPantalla(1000,500,app_MenuUs)
-    #PANEL 1 (izquierda, el mas angosto)
-    panel1 = Frame(app_MenuUs, bg="gainsboro")
-    panel1.place(x=0, width=200, height=500)
-    #PANEL 2 (derecha, el mas ancho)
-    panel2 = Frame(app_MenuUs)
-    panel2.place(x=200, width=800, height=500)
-    #BOTON VOLVER
-    btn_volver = Button(app_MenuUs, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuUs,app))
-    btn_volver.place(x=10,y=10)
-    #COMPONENTES PARA EL PANEL 1
-    lbl1 = Label(panel2, text=("¡Bienvenido "+nombreUsuario+"!"), font=(fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=50, anchor="center")
-
-    #COMPONENTES PARA EL PANEL 2 
-#--------------------INICIAR SESION COMO ORGANIZADOR
-def bd_InicioSesion_Organizador(ent_usu, ent_contra,app_Inse_Org):
+#--------------------INICIAR SESION
+def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse):
     if(len(ent_usu.get()) > 0 and len(ent_contra.get()) > 0):
         nombreUsuario = ent_usu.get()
         contrasena = ent_contra.get()
         try:
             conexion = iniciarConexion(vectorConexion)
             cursor = conexion.cursor()
+            #CONSULTA PARA VERIFICAR QUE SEA UN ORGANIZADOR O NO-------------------------------------
             consulta1 = "SELECT * FROM Organizador WHERE nombreUsuario = %s"
             consulta2 = "SELECT * FROM Organizador WHERE nombreUsuario = %s AND contraseña = %s"
+            #CONSULTA PARA VERIFICAR QUE SEA UN USUARIO O NO---------------------------------
+            consulta3 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s"
+            consulta4 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s AND Contrasena = %s"
+
             cursor.execute(consulta1,(nombreUsuario,))
-
-            resultado = cursor.fetchone()
-            if(resultado):
-                cursor.execute(consulta2,(nombreUsuario,contrasena,))
-                resultado2 = cursor.fetchone()
-                if(resultado2):
-                    app_Inse_Org.destroy()
-                    creacionPantalla_MenuOrganizador(app,fuente, nombreUsuario)
-                else:
-                    messagebox.showerror(title= "Credenciales no Coinciden", 
-                                        message=("La contraseña no coincide con el nombre de usuario '"+nombreUsuario+ "' intente nuevamente"))
-                    ent_contra.delete(0,END)
-                    ent_contra.focus_set()        
-            else:
-                messagebox.showerror(title= "Usuario No Encontrado", message=("No se encontró el usuario '"+nombreUsuario+ "' intente nuevamente"))
-                ent_usu.delete(0,END)
-                ent_contra.delete(0,END) 
-                ent_usu.focus_set()        
-        except:
-            messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
-        finally:      
-
-            cursor.close()
-            conexion.close()
-    else:
-        messagebox.showerror(title="Valores Invalidos", message="Por favor llene los campos")
-        ent_usu.delete(0,END)
-        ent_contra.delete(0,END) 
-        ent_usu.focus_set()  
-#--------------------INICIAR SESION COMO USUARIO
-def bd_InicioSesion_Usuario(ent_usu, ent_contra,app_Inse):
-    if(len(ent_usu.get()) > 0 and len(ent_contra.get()) > 0):
-        nombreUsuario = ent_usu.get()
-        contrasena = ent_contra.get()
-        try:
-            conexion = iniciarConexion(vectorConexion)
-            cursor = conexion.cursor()
-            consulta1 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s"
-            consulta2 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s AND Contrasena = %s"
-            cursor.execute(consulta1,(nombreUsuario,))
-
-            resultado = cursor.fetchone()
+            resultado = cursor.fetchone()  
             if(resultado):
                 cursor.execute(consulta2,(nombreUsuario,contrasena,))
                 resultado2 = cursor.fetchone()
                 if(resultado2):
                     app_Inse.destroy()
-                    creacionPantalla_MenuUsuario(app,fuente, nombreUsuario)
+                    creacionPantalla_MenuOrganizador(app,fuente, nombreUsuario)
+                    print("Se encontró como ORGANIZADOR")
                 else:
                     messagebox.showerror(title= "Credenciales no Coinciden", 
                                         message=("La contraseña no coincide con el nombre de usuario '"+nombreUsuario+ "' intente nuevamente"))
                     ent_contra.delete(0,END)
-                    ent_contra.focus_set()        
+                    ent_contra.focus_set()
+                    print("No se encontro como ORGANIZADOR")   
             else:
-                messagebox.showerror(title= "Usuario No Encontrado", message=("No se encontró el usuario '"+nombreUsuario+ "' intente nuevamente"))
-                ent_usu.delete(0,END)
-                ent_contra.delete(0,END) 
-                ent_usu.focus_set()        
-        except Error as e:
-            print(e)
+                cursor.execute(consulta3,(nombreUsuario,))
+                resultado3 = cursor.fetchone()  
+                if(resultado3):
+                    cursor.execute(consulta4,(nombreUsuario,contrasena,))
+                    resultado4 = cursor.fetchone()
+                    if(resultado4):
+                        app_Inse.destroy()
+                        creacionPantalla_MenuUsuario(app,fuente, nombreUsuario)
+                        print("Se encontro como USUARIO")
+                    else:
+                        messagebox.showerror(title= "Credenciales no Coinciden", 
+                                            message=("La contraseña no coincide con el nombre de usuario '"+nombreUsuario+ "' intente nuevamente"))
+                        ent_contra.delete(0,END)
+                        ent_contra.focus_set()
+                        print("No se encontró como USUARIO")   
+                else:
+                    messagebox.showerror(title= "Usuario No Encontrado", message=("No se encontró el usuario '"+nombreUsuario+ "' intente nuevamente"))
+                    ent_usu.delete(0,END)
+                    ent_contra.delete(0,END) 
+                    ent_usu.focus_set()   
+     
+        except:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
         finally:      
-
             cursor.close()
             conexion.close()
     else:
@@ -337,7 +293,6 @@ centrarPantalla(500,500,app)
 #--------------Definicion de Fuentes
 fuente= ("Source Code Pro")
 #--------------Conexion a la Base de Datos
-
  
 creacionPantalla_Principal(app,fuente)
 
