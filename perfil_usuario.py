@@ -1,31 +1,12 @@
 from librerias import * 
 import librerias as lib
+import panel_administracion
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 
 #FUNCIONES=============================================================================
 
 #====================================[PANTALLAS]
-def creacionPantalla_Principal(app,fuente):
-    #Bienvenidos
-    lbl_1 = Label(app, text="Bienvenido", font=(fuente,20,"bold"))
-    lbl_1.place(relx=0.5, y=100, anchor="center")
-    #Iniciar Sesion
-    btn_InSe = Button(app,text="Iniciar Sesion",font=(fuente,14,"bold"), 
-                      command=partial(creacionPantalla_IniciarSesion,app,fuente))
-    btn_InSe.place(relx=0.5, y= 200, anchor="center", width=200)
-    #Registrarse
-    btn_Regis = Button(app,text="Registrarse",font=(fuente,14,"bold"),
-                       command=partial(creacionPantalla_Registrarse,app,fuente))
-    btn_Regis.place(relx=0.5, y= 280, anchor="center", width=200)
-#--------------------Centrar Pantalla
-def centrarPantalla(ancho,alto,app):
-    ancho_pantalla = app.winfo_screenwidth()
-    alto_pantalla = app.winfo_screenheight()
 
-    x = (ancho_pantalla // 2) - (ancho // 2)
-    y = (alto_pantalla // 2) - (alto // 2)
-
-    app.geometry(f"{ancho}x{alto}+{x}+{y}")
 #--------------------Centrar Pantalla
 def centrarPantalla(ancho,alto,app):
     ancho_pantalla = app.winfo_screenwidth()
@@ -111,25 +92,6 @@ def creacionPantalla_Registrarse(app,fuente):
     btn_ini.place(relx=0.5, y=440, anchor="center", width=200, height=30)
 
     app.withdraw()
-#--------------------Pantalla Menu Organizador
-def creacionPantalla_MenuOrganizador(app,fuente,nombreUsuario):
-    app_MenuOrg = Toplevel(app)
-    app_MenuOrg.title("Sesion Organizador")
-    centrarPantalla(1000,500,app_MenuOrg)
-    #PANEL 1 (izquierda, el mas angosto)
-    panel1 = Frame(app_MenuOrg, bg="gainsboro")
-    panel1.place(x=0, width=200, height=500)
-    #PANEL 2 (derecha, el mas ancho)
-    panel2 = Frame(app_MenuOrg)
-    panel2.place(x=200, width=800, height=500)
-    #BOTON VOLVER
-    btn_volver = Button(app_MenuOrg, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuOrg,app))
-    btn_volver.place(x=10,y=10)
-    #COMPONENTES PARA EL PANEL 1
-    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), font=(fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=50, anchor="center")
-
-    #COMPONENTES PARA EL PANEL 2 
 #--------------------Pantalla Menu Usuario
 def creacionPantalla_MenuUsuario(app,fuente,nombreUsuario):
     app_MenuUs = Toplevel(app)
@@ -244,7 +206,7 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
                 resultado2 = cursor.fetchone()
                 if(resultado2):
                     app_Inse.destroy()
-                    creacionPantalla_MenuOrganizador(app,fuente, nombreUsuario)
+                    panel_administracion.creacionPantalla_MenuOrganizador(app,fuente, nombreUsuario)
                     print("Se encontró como ORGANIZADOR")
                 else:
                     messagebox.showerror(title= "Credenciales no Coinciden", 
