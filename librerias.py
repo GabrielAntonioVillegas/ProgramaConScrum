@@ -28,6 +28,7 @@ __all__ = [
     'random', 
     'time',
     'mysql', 
-    'Error'
+    'Error',
+    'END'
 ]
 

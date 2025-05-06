@@ -1,4 +1,4 @@
-from tkinter import END
+
 from librerias import * 
 import librerias as lib
 import panel_administracion
