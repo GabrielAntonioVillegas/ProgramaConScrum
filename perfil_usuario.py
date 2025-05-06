@@ -1,3 +1,4 @@
+from tkinter import END
 from librerias import * 
 import librerias as lib
 import panel_administracion
@@ -206,7 +207,7 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
                 resultado2 = cursor.fetchone()
                 if(resultado2):
                     app_Inse.destroy()
-                    panel_administracion.creacionPantalla_MenuOrganizador(app,fuente, nombreUsuario)
+                    panel_administracion.creacionPantalla_MenuOrganizador2(app,fuente, nombreUsuario)
                     print("Se encontró como ORGANIZADOR")
                 else:
                     messagebox.showerror(title= "Credenciales no Coinciden", 
