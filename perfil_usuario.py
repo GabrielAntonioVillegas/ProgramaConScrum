@@ -1,6 +1,7 @@
-
+from tkinter.ttk import Treeview
 from librerias import * 
 import librerias as lib
+import funciones_generales
 import panel_administracion
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 
@@ -23,7 +24,6 @@ def cerrar_abrirVentanas(app1,app2):
     #app2.withdraw()  #Ocultar Ventana
     #Para poder usar deiconify, la ventana a reaparecer debe primero ser ocultada con .withdraw()
     app2.deiconify() #Reaparecer Ventana
-
 #--------------------Pantalla Iniciar Sesion
 def creacionPantalla_IniciarSesion(app,fuente):
     app_Inse= Toplevel(app)
@@ -93,26 +93,175 @@ def creacionPantalla_Registrarse(app,fuente):
     btn_ini.place(relx=0.5, y=440, anchor="center", width=200, height=30)
 
     app.withdraw()
+#--------------------Ocultar pagina
+def ocultar_pagina(vector_paginas, paginaMostrar):
+    for pagina in vector_paginas:
+        if pagina != paginaMostrar:
+            pagina.place_forget()
+#--------------------Busqueda por palabras clave de eventos NO ANDA AUN
+def busquedaEvento(lista, entryget):
+    for item in lista.get_children():
+        lista.delete(item)
+    
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE LOWER(titulo) LIKE LOWER(%s)')
+        cursor.execute(consulta, (entryget,))
+        resultados=cursor.fetchall()
+        if resultados:
+            for idevento, titulo, ubicacion, fecha_inicio in resultados:
+                lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
+        else:
+            lista.insert("", "end", values=("", "No se encontraron eventos que coincidan", "", ""))
+            # Deshabilitar selección
+            lista.bind("<<TreeviewSelect>>", lambda e: lista.selection_remove(lista.selection()))
+
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+
+#--------------------Mostrar pagina principal
+def mostrar_pagina_principal(vector_paginas):
+    pagina_principal = vector_paginas[0]
+    pagina_principal.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_principal)
+#-------------------Mostrar pagina buscar
+def mostrar_pagina_buscar(vector_paginas):
+    pagina_buscar = vector_paginas[1]
+    pagina_buscar.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_buscar)
+
+    lbl1=Label(pagina_buscar,text="Buscar eventos", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    #funciones locales de placeholder (texto de sugerencia del entry)
+    def clickeado(event):
+        if ent_buscar.get() == 'Busca un evento por su título...':
+            ent_buscar.delete(0, 'end')  # Borra el texto
+            ent_buscar.config(fg='black')  # Cambia el color
+            btn_buscar.config(state="normal")
+
+    def no_clickeado(event):
+        if ent_buscar.get() == '':
+            ent_buscar.insert(0, 'Busca un evento por su título...')
+            ent_buscar.config(fg='gray')
+            btn_buscar.config(state="disabled")
+
+    ent_buscar=Entry(pagina_buscar, font=(fuente, 15), fg="gray")
+    ent_buscar.insert(0,"Busca un evento por su título...")
+    ent_buscar.bind('<FocusIn>', clickeado)
+    ent_buscar.bind('<FocusOut>', no_clickeado)
+
+    ent_buscar.place(x=200, y=50, height=30, width=350)
+
+    lista = Treeview(pagina_buscar,columns=("ID", "Título", "Dirección", "Fecha"), show="headings")
+    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=250)
+    lista.heading("ID", text="")
+    lista.heading("Título", text="Título")
+    lista.heading("Dirección", text="Dirección")
+    lista.heading("Fecha", text="Fecha")
+    lista.column("ID", width=0, stretch=False)
+    lista.column("Título", width=100, anchor="center")
+    lista.column("Dirección", width=150, anchor="center")
+    lista.column("Fecha", width=150, anchor="center")
+
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        cursor.execute('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo"')
+        resultados=cursor.fetchall()
+        if resultados:
+            for idevento, titulo, ubicacion, fecha_inicio in resultados:
+                lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
+        else:
+            lista.insert("", "end", values=("", "No hay eventos activos", "", ""))
+            # Deshabilitar selección
+            lista.bind("<<TreeviewSelect>>", lambda e: lista.selection_remove(lista.selection()))
+
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+    
+    entrada = ent_buscar.get().strip()
+    entryget="%"+entrada+"%"
+    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, entryget))
+    btn_buscar.config(state="disabled")
+    btn_buscar.place(x=550, y=50, height=30, width=50)
+    
+    
+#--------------------Mostrar pagina notificaciones
+def mostrar_pagina_notificaciones(vector_paginas):
+    pagina_notificaciones = vector_paginas[2]
+    pagina_notificaciones.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_notificaciones)
+
+    lbl1=Label(pagina_notificaciones,text="Notificaciones", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
 #--------------------Pantalla Menu Usuario
-def creacionPantalla_MenuUsuario(app,fuente,nombreUsuario):
+def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
+    global fuente
+    fuente = _fuente
     app_MenuUs = Toplevel(app)
     centrarPantalla(1000,500,app_MenuUs)
     app_MenuUs.title("Sesion Usuario")
     #PANEL 1 (izquierda, el mas angosto)
-    panel1 = Frame(app_MenuUs, bg="gainsboro")
+    panel1 = Frame(app_MenuUs, bg="gray")
     panel1.place(x=0, width=200, height=500)
     #PANEL 2 (derecha, el mas ancho)
-    panel2 = Frame(app_MenuUs)
+    panel2 = Frame(app_MenuUs, bg="gainsboro")
     panel2.place(x=200, width=800, height=500)
+
+    #Pagina buscar eventos
+    pagina_buscar = Frame(app_MenuUs, bg="gainsboro")
+    pagina_buscar.place(x=200, width=800, height=500)
+
+    #Pagina notificaciones
+    pagina_notificaciones=Frame(app_MenuUs, bg="gainsboro")
+    pagina_notificaciones.place(x=200, width=800, height=500)
+
+    #Completar vector paginas
+    vector_paginas=[panel2,pagina_buscar,pagina_notificaciones]
+
+    for i in range(len(vector_paginas)):
+        if vector_paginas[i] != panel2:
+            vector_paginas[i].place_forget()
+
     #BOTON VOLVER
     btn_volver = Button(app_MenuUs, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuUs,app))
     btn_volver.place(x=10,y=10)
     #COMPONENTES PARA EL PANEL 1
-    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), font=(fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=50, anchor="center")
 
-    #COMPONENTES PARA EL PANEL 2    
+    btn_principal = Button(app_MenuUs, text="Menu Principal", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
+    btn_principal.place(x=20, y=70, width=160, height=30)
+    
+    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, vector_paginas))
+    btn_buscar.place(x=20, y=100, width=160, height=30)
+    
+    btn_notificaciones = Button(app_MenuUs, text="Notificaciones", relief="flat", command=partial(mostrar_pagina_notificaciones, vector_paginas))
+    btn_notificaciones.place(x=20, y=130, width=160, height=30)
 
+    #COMPONENTES PARA EL PANEL 2 (pagina principal) 
+    
+    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), bg = "gainsboro", font=(fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    
 #====================================[BASE DE DATOS]
 def iniciarConexion(vectorConexion):
     conexion = mysql.connector.connect(
@@ -237,8 +386,9 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
                     ent_contra.delete(0,END) 
                     ent_usu.focus_set()   
      
-        except:
+        except Exception as e:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+            print (e)
         finally:      
             cursor.close()
             conexion.close()
