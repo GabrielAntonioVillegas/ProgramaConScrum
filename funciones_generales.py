@@ -1,3 +1,5 @@
+from librerias import * 
+import librerias as lib
 #--------------------Centrar Pantalla
 def centrarPantalla(ancho,alto,app):
     ancho_pantalla = app.winfo_screenwidth()
@@ -13,3 +15,13 @@ def cerrar_abrirVentanas(app1,app2):
     #app2.withdraw()  #Ocultar Ventana
     #Para poder usar deiconify, la ventana a reaparecer debe primero ser ocultada con .withdraw()
     app2.deiconify() #Reaparecer Ventana
+
+#-------------------CONEXION BASE DE DATOS
+def iniciarConexion(vectorConexion):
+    conexion = mysql.connector.connect(
+        host= vectorConexion[0],
+        user= vectorConexion[1],
+        password= vectorConexion[2],
+        database= vectorConexion[3]
+    )
+    return conexion
