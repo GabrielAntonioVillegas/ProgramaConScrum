@@ -30,6 +30,218 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg):
 
     lbl1 = Label(pagina_evento, text="Crear Evento", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+#
+# 
+# 
+#PAGINA UBICACIONES--------------------------------------
+def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg):
+    pagina_ubicaciones = vector_paginas[4]
+    pagina_ubicaciones.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_ubicaciones)
+
+    lbl1 = Label(pagina_ubicaciones, text="Ubicaciones", font=(fuente, 16, "bold"), background= "gainsboro")
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    
+    #Añadir Ubicacion
+    parte1 = Frame(pagina_ubicaciones)
+    parte1.place(x=10, y=30, width=385, height=460)
+    lbl_titulo1 = Label(parte1, text="Crear / Modificar Ubicacion", font=(fuente, 14, "bold"))
+    lbl_titulo1.place(relx=0.5, anchor="center", y=30)
+    #----------------------------------------------
+    lbl_id= Label(parte1, text= "Id")
+    lbl_id.place(x=115, y=100)
+    ent_id = Entry(parte1)
+    ent_id.place(x=115, y=130, width=150)
+    ent_id.config(state='readonly')
+    #----------------------------------------------
+    lbl_nomCalle = Label(parte1, text= "Nombre de la calle")
+    lbl_nomCalle.place(x=115, y=170)
+    ent_nomCalle = Entry(parte1)
+    ent_nomCalle.place(x=115, y=200, width=150)
+    ent_nomCalle.config(state="normal")
+    #---------------------------------------------
+    lbl_altura = Label(parte1, text= "Altura")
+    lbl_altura.place(x=115, y=240)
+    ent_altura = Entry(parte1)
+    ent_altura.place(x=115, y=270, width=75)
+    ent_altura.config(state="normal")
+
+    #Mostrar Ubicacion
+    parte2 = Frame(pagina_ubicaciones)
+    parte2.place(x=405, y=30, width=385, height=460)
+
+    
+    lbl_titulo2 = Label(parte2, text="Ubicaciones Existentes", font=(fuente, 14, "bold"))
+    lbl_titulo2.place(relx=0.5, anchor="center", y=30)
+    
+    trv_ubicaciones = ttk.Treeview(parte2, columns=(1, 2), show="headings", height="15")
+    trv_ubicaciones.place(x=10,y=100, width=370)
+
+    trv_ubicaciones.heading(1, text="Id")
+    trv_ubicaciones.heading(2, text="Direccion")
+
+    trv_ubicaciones.column(1, width=20)
+
+    #----------------------------------------------
+    btn_guardar = Button(parte1, text="Guardar Cambios", command=partial(guardar_ubicacion,ent_id, ent_nomCalle, ent_altura, trv_ubicaciones))
+    btn_guardar.place(x=115, y=320, width=150, height=30)
+
+    btn_eliminar = Button(parte1, text="Eliminar Ubicacion", command=partial(eliminar_ubicacion,ent_id, ent_nomCalle, ent_altura, trv_ubicaciones))
+    btn_eliminar.place(x=115, y=370, width=150, height=30)
+    btn_eliminar.config(state="disable")
+
+    mostrar_ubicacionesArbol(trv_ubicaciones)
+    trv_ubicaciones.bind('<ButtonRelease-1>', lambda event:tomar_datos_ubicacionesArbol(event, trv_ubicaciones, ent_id, ent_nomCalle,ent_altura,btn_eliminar))
+    app_MenuOrg.bind("<Button-1>", lambda event: deseleccionarUbicaciones(event, trv_ubicaciones, ent_id, ent_nomCalle, ent_altura, btn_guardar, btn_eliminar))
+#MOSTRAR TREEVIEW CATEGORIAS-----------------------------
+def mostrar_ubicacionesArbol(arbol_ubicaciones):
+    try:
+        conexion = funciones_generales.iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        
+        cursor.execute("SELECT COUNT(*) FROM Ubicacion")
+        cantidad = cursor.fetchone()[0]
+
+        if cantidad == 0:
+            arbol_ubicaciones.insert("","end", values=("-","Ninguna ubicacion por ahora"))
+        else:
+            cursor.execute("SELECT id_ubicacion, direccion FROM Ubicacion ORDER BY id_ubicacion ASC")
+            resultado = cursor.fetchall()
+
+            arbol_ubicaciones.delete(*arbol_ubicaciones.get_children())
+
+            for fila in resultado:
+                arbol_ubicaciones.insert("", "end", values=fila)
+
+    except Exception as e:
+        messagebox.showerror(title="Error de Conexión", message="¡Ups! Hubo un error al conectar con la Base de Datos")
+        print("Error al mostrar categorías:", e)
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+#TOMAR DATOS TREEVIEW------------------------------------
+def tomar_datos_ubicacionesArbol(event, trv_ubicaciones, ent_id, ent_nomCalle,ent_altura, btn_eliminar):
+    btn_eliminar.config(state="normal")
+
+    ent_id.config(state='normal')
+
+    ent_id.delete(0, END)
+    ent_nomCalle.delete(0, END)
+    ent_altura.delete(0,END)
+
+    fila = trv_ubicaciones.focus()
+    valores= trv_ubicaciones.item(fila, 'values')
+
+    if valores:    
+        ent_id.insert(0,valores[0])
+
+        aux = valores[1].split(" ")
+        ent_nomCalle.insert(0,aux[0])
+        ent_altura.insert(0,aux[1])
+
+        ent_id.config(state="readonly")
+#GUARDAR UBICACION---------------------------------------
+def guardar_ubicacion(ent_id, ent_nomCalle, ent_altura, arbol_ubicaciones):
+    #DAR  DE ALTA
+    if(len(ent_nomCalle.get()) > 0 and len(ent_altura.get())):
+        
+        calle = ent_nomCalle.get()
+        altura = ent_altura.get()
+        direccion = calle + " " + altura 
+        try:
+            conexion = funciones_generales.iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
+
+            consulta = "SELECT COUNT(*) FROM Ubicacion WHERE direccion = %s"
+            cursor.execute(consulta, (direccion,))
+            resultado = cursor.fetchone()[0]
+            if(resultado > 0):
+                messagebox.showerror(title="Error", message="Esta direccion ya está registrada.")
+            else:
+                if(len(ent_id.get()) > 0):
+                    id= ent_id.get()
+
+                    consulta= "UPDATE Ubicacion SET direccion = %s WHERE id_ubicacion = %s"
+                    valores = (direccion, id)
+                    cursor.execute(consulta, valores)
+                    conexion.commit()
+                    messagebox.showinfo(title="Éxito", message="¡Ubicacion Actualizada Correctamente!")
+                    ent_id.config(state="normal")
+                    ent_id.delete(0,END)
+                    ent_id.config(state="readonly")
+                    ent_nomCalle.delete(0,END)
+                    ent_altura.delete(0,END)
+                    mostrar_ubicacionesArbol(arbol_ubicaciones)
+                else:
+                    consulta = "INSERT INTO Ubicacion (direccion) VALUES (%s)"
+                    cursor.execute(consulta, (direccion, ))
+                    conexion.commit()
+                    messagebox.showinfo(title="Éxito", message="¡Ubicacion Registrada Correctamente!")
+                    ent_nomCalle.delete(0,END)
+                    ent_altura.delete(0,END)
+                    mostrar_ubicacionesArbol(arbol_ubicaciones)
+        except Exception as e:
+            messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+            print (e)
+        finally:
+            try:
+                cursor.close()
+                conexion.close()
+            except:
+                pass
+    else:
+        ent_nomCalle.delete(0,END)
+        ent_nomCalle.focus()
+        messagebox.showerror(title="Campos vacios", message="Por favor llene los campos")
+#ELIMINAR UBICACION--------------------------------------
+def eliminar_ubicacion(ent_id, ent_nomCalle, ent_altura, arbol_ubicacion):
+    ent_nomCalle.config(state="normal")
+    if(len(ent_id.get()) > 0 and len(ent_nomCalle.get()) > 0):
+        id = ent_id.get()
+        try:
+            conexion = funciones_generales.iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
+
+            consulta = "DELETE FROM Ubicacion WHERE id_ubicacion = %s"
+            cursor.execute(consulta,(id, ))
+            conexion.commit()
+            messagebox.showinfo(title="Éxito", message="¡Ubicacion Eliminada Correctamente!")
+            ent_id.config(state="normal")
+            ent_id.delete(0,END)
+            ent_id.config(state="readonly")
+
+            ent_nomCalle.delete(0,END)
+            ent_altura.delete(0,END)
+            mostrar_ubicacionesArbol(arbol_ubicacion)
+        except Exception as e:
+            messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+            print (e)
+        finally: 
+            try:
+                cursor.close()
+                conexion.close()
+            except:
+                pass
+#DESELECCIONAR FILA--------------------------------------
+def deseleccionarUbicaciones(event, trv_ubicaciones, ent_id, ent_nomCalle, ent_altura, btn_guardar, btn_eliminar):
+    widget = event.widget
+    if widget not in (trv_ubicaciones,ent_id, ent_nomCalle, ent_altura,btn_guardar, btn_eliminar):
+        trv_ubicaciones.selection_remove(trv_ubicaciones.selection())
+        ent_id.config(state='normal')
+        
+        ent_id.delete(0,END)
+        ent_nomCalle.delete(0,END)
+        ent_altura.delete(0,END)
+
+        ent_id.config(state="readonly")
+        
+        btn_eliminar.config(state="disable")
+#
+# 
+# 
 #PAGINA CATEGORIAS---------------------------------------
 def mostrar_pagina_categorias(vector_paginas, app_MenuOrg):
     pagina_categoria = vector_paginas[3]
@@ -56,7 +268,7 @@ def mostrar_pagina_categorias(vector_paginas, app_MenuOrg):
     lbl_nom.place(x=115, y=170)
     ent_nom = Entry(parte1)
     ent_nom.place(relx=0.5, anchor="center", y=200, width=150)
-    
+    ent_nom.config(state="normal")
     #Mostrar Categorías
     parte2 = Frame(pagina_categoria)
     parte2.place(x=405, y=30, width=385, height=460)
@@ -74,56 +286,91 @@ def mostrar_pagina_categorias(vector_paginas, app_MenuOrg):
 
     mostrar_categoriasArbol(trv_categorias)
     #----------------------------------------------
-    btn_guardar = Button(parte1, text="Guardar Cambios", command=partial(guardar_categorias,ent_nom, trv_categorias))
+    btn_guardar = Button(parte1, text="Guardar Cambios", command=partial(guardar_categorias,ent_id,ent_nom, trv_categorias))
     btn_guardar.place(relx=0.5, anchor="center", y=260, width=150, height=30)
 
-    btn_eliminar = Button(parte1, text="Eliminar Categoria")
+    btn_eliminar = Button(parte1, text="Eliminar Categoria", command=partial(eliminar_categoria,ent_id, ent_nom, trv_categorias))
     btn_eliminar.place(relx=0.5, anchor="center", y=320, width=150, height=30)
     btn_eliminar.config(state="disable")
 
-    trv_categorias.bind('<ButtonRelease-1>', lambda event:tomar_datos_categoriasArbol(event, trv_categorias, ent_id, ent_nom, btn_guardar,btn_eliminar))
-    app_MenuOrg.bind_all("<Button-1>", lambda event:deseleccionar(event, trv_categorias, ent_id, ent_nom, btn_guardar, btn_eliminar))
-#PAGINA UBICACIONES--------------------------------------
-def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg):
-    pagina_ubicaciones = vector_paginas[4]
-    pagina_ubicaciones.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_ubicaciones)
+    trv_categorias.bind('<ButtonRelease-1>', lambda event:tomar_datos_categoriasArbol(event, trv_categorias, ent_id, ent_nom, btn_eliminar))
+    app_MenuOrg.bind_all("<Button-1>", lambda event:deseleccionarCategorias(event, trv_categorias, ent_id, ent_nom, btn_guardar, btn_eliminar))
+#GUARDAR CATEGORIA---------------------------------------
+def guardar_categorias(ent_id, ent_nom, arbol_categorias):
+    #DAR  DE ALTA
+    if(len(ent_nom.get()) > 0):
+        nombre = ent_nom.get()
+        try:
+            conexion = funciones_generales.iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
 
-    lbl1 = Label(pagina_ubicaciones, text="Ubicaciones", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#TOMAR DATOS TREEVIEW------------------------------------
-def tomar_datos_categoriasArbol(event,trv_categorias, ent_id, ent_nom, btn_guardar, btn_eliminar):
-    btn_guardar.config(state="disable")
-    btn_eliminar.config(state="normal")
+            consulta_mail = "SELECT COUNT(*) FROM Categoria WHERE nombre = %s"
+            cursor.execute(consulta_mail, (nombre,))
+            resultado_categoria = cursor.fetchone()[0]
+            if(resultado_categoria > 0):
+                messagebox.showerror(title="Error", message="Este nombre de categoria ya está registrado.")
+            else:
+                if(len(ent_id.get()) > 0):
+                    id= ent_id.get()
 
-    ent_id.config(state='normal')
+                    consulta= "UPDATE Categoria SET nombre = %s WHERE id_categoria = %s"
+                    valores = (nombre, id)
+                    cursor.execute(consulta, valores)
+                    conexion.commit()
+                    messagebox.showinfo(title="Éxito", message="¡Categoria Actualizada Correctamente!")
+                    ent_id.config(state="normal")
+                    ent_id.delete(0,END)
+                    ent_id.config(state="readonly")
+                    ent_nom.delete(0,END)
+                    mostrar_categoriasArbol(arbol_categorias)
+                else:
+                    consulta = "INSERT INTO Categoria (nombre) VALUES (%s)"
+                    cursor.execute(consulta, (nombre, ))
+                    conexion.commit()
+                    messagebox.showinfo(title="Éxito", message="¡Categoria Registrada Correctamente!")
+                    ent_nom.delete(0,END)
+                    mostrar_categoriasArbol(arbol_categorias)
+        except Exception as e:
+            messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+            print (e)
+        finally:
+            try:
+                cursor.close()
+                conexion.close()
+            except:
+                pass
+    else:
+        ent_nom.delete(0,END)
+        ent_nom.focus()
+        messagebox.showerror(title="Campos vacios", message="Por favor llene los campos")
+#ELIMINAR CATEGORIA--------------------------------------
+def eliminar_categoria(ent_id, ent_nom, arbol_categorias):
     ent_nom.config(state="normal")
-    ent_id.delete(0, END)
-    ent_nom.delete(0, END)
+    if(len(ent_id.get()) > 0 and len(ent_nom.get()) > 0):
+        id = ent_id.get()
+        nom = ent_nom.get()
+        try:
+            conexion = funciones_generales.iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
 
-    fila = trv_categorias.focus()
-    valores= trv_categorias.item(fila, 'values')
-
-    if valores:    
-        ent_id.insert(0,valores[0])
-        ent_nom.insert(0,valores[1])
-        ent_id.config(state="readonly")
-        ent_nom.config(state="readonly")
-#DESELECCIONAR FILA--------------------------------------
-def deseleccionar(event, trv_categorias, ent_id, ent_nom, btn_guardar, btn_eliminar):
-    widget = event.widget
-
-    if widget not in (ent_id, ent_nom, btn_guardar, btn_eliminar):
-        trv_categorias.selection_remove(trv_categorias.selection())
-
-        ent_id.config(state='normal')
-        ent_nom.config(state="normal")
-        ent_id.delete(0, END)
-        ent_nom.delete(0, END)
-        ent_id.config(state="readonly")
-        
-        btn_guardar.config(state="normal")
-        btn_eliminar.config(state="disable")
+            consulta = "DELETE FROM Categoria WHERE id_categoria = %s"
+            cursor.execute(consulta,(id, ))
+            conexion.commit()
+            messagebox.showinfo(title="Éxito", message="¡Categoria Eliminada Correctamente!")
+            ent_id.config(state="normal")
+            ent_id.delete(0,END)
+            ent_id.config(state="readonly")
+            ent_nom.delete(0,END)
+            mostrar_categoriasArbol(arbol_categorias)
+        except Exception as e:
+            messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+            print (e)
+        finally: 
+            try:
+                cursor.close()
+                conexion.close()
+            except:
+                pass
 #MOSTRAR TREEVIEW CATEGORIAS-----------------------------
 def mostrar_categoriasArbol(arbol_categorias):
     try:
@@ -153,40 +400,39 @@ def mostrar_categoriasArbol(arbol_categorias):
             conexion.close()
         except:
             pass
-#GUARDAR CATEGORIA---------------------------------------
-def guardar_categorias(ent_nom, arbol_categorias):
-    if(len(ent_nom.get()) > 0):
-        nombre = ent_nom.get()
-        try:
-            conexion = funciones_generales.iniciarConexion(vectorConexion)
-            cursor = conexion.cursor()
+#TOMAR DATOS TREEVIEW------------------------------------
+def tomar_datos_categoriasArbol(event,trv_categorias, ent_id, ent_nom,btn_eliminar):
+    btn_eliminar.config(state="normal")
 
-            consulta_mail = "SELECT COUNT(*) FROM Categoria WHERE nombre = %s"
-            cursor.execute(consulta_mail, (nombre,))
-            resultado_categoria = cursor.fetchone()[0]
-            if(resultado_categoria > 0):
-                messagebox.showerror(title="Error", message="Este nombre de categoria ya está registrado.")
-            else:
-                consulta = "INSERT INTO Categoria (nombre) VALUES (%s)"
-                cursor.execute(consulta, (nombre, ))
-                conexion.commit()
-                messagebox.showinfo(title="Éxito", message="¡Categoria Registrada Correctamente!")
-                ent_nom.delete(0,END)
-                mostrar_categoriasArbol(arbol_categorias)
-        except:
-            pass
-        finally:
-            try:
-                cursor.close()
-                conexion.close()
-            except:
-                pass
-    else:
-        ent_nom.delete(0,END)
-        ent_nom.focus()
-        messagebox.showerror(title="Campos vacios", message="Por favor llene los campos")
+    ent_id.config(state='normal')
 
+    ent_id.delete(0, END)
+    ent_nom.delete(0, END)
 
+    fila = trv_categorias.focus()
+    valores= trv_categorias.item(fila, 'values')
+
+    if valores:    
+        ent_id.insert(0,valores[0])
+        ent_nom.insert(0,valores[1])
+        ent_id.config(state="readonly")
+#DESELECCIONAR FILA--------------------------------------
+def deseleccionarCategorias(event, trv_categorias, ent_id, ent_nom, btn_guardar, btn_eliminar):
+    widget = event.widget
+
+    if widget not in (trv_categorias,ent_id, ent_nom, btn_guardar, btn_eliminar):
+        trv_categorias.selection_remove(trv_categorias.selection())
+
+        ent_id.config(state='normal')
+        
+        ent_id.delete(0, END)
+        ent_nom.delete(0, END)
+        ent_id.config(state="readonly")
+        
+        btn_eliminar.config(state="disable")
+#
+# 
+# 
 #FUNCION PRINCIPAL=====================================================================================
 def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario):
     global fuente

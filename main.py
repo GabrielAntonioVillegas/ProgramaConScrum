@@ -1,5 +1,6 @@
 from librerias import *
 import perfil_usuario
+import panel_administracion
 #FUNCIONES=============================================================================
 #--------------------Pantalla Menu Principal
 def creacionPantalla_Principal(app,fuente):
@@ -24,6 +25,7 @@ perfil_usuario.centrarPantalla(500,500,app)
 fuente= ("Source Code Pro")
 #--------------Conexion a la Base de Datos
  
-creacionPantalla_Principal(app,fuente)
+#creacionPantalla_Principal(app,fuente)
+panel_administracion.creacionPantalla_MenuOrganizador2(app, fuente, "pepito")
 
 app.mainloop()
