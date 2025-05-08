@@ -99,11 +99,16 @@ def ocultar_pagina(vector_paginas, paginaMostrar):
         if pagina != paginaMostrar:
             pagina.place_forget()
 #--------------------Busqueda por palabras clave de eventos NO ANDA AUN
-def busquedaEvento(lista, entryget):
+def busquedaEvento(lista, ent_buscar):
+
+    lista.unbind("<<TreeviewSelect>>")
+
     for item in lista.get_children():
         lista.delete(item)
     
     try:
+        entrada = ent_buscar.get().strip()
+        entryget="%"+entrada+"%"
         conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
         consulta = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE LOWER(titulo) LIKE LOWER(%s)')
@@ -113,9 +118,11 @@ def busquedaEvento(lista, entryget):
             for idevento, titulo, ubicacion, fecha_inicio in resultados:
                 lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
         else:
-            lista.insert("", "end", values=("", "No se encontraron eventos que coincidan", "", ""))
-            # Deshabilitar selección
-            lista.bind("<<TreeviewSelect>>", lambda e: lista.selection_remove(lista.selection()))
+            lista.insert("", "end", values=("", "", "No se encontraron eventos que coincidan", ""))
+            def evitar_seleccion(event):
+                # Cancela la selección
+                lista.selection_clear()
+            lista.bind("<<TreeviewSelect>>", evitar_seleccion)
 
 
     except Exception as e:
@@ -182,10 +189,12 @@ def mostrar_pagina_buscar(vector_paginas):
             for idevento, titulo, ubicacion, fecha_inicio in resultados:
                 lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
         else:
-            lista.insert("", "end", values=("", "No hay eventos activos", "", ""))
+            lista.insert("", "end", values=("", "", "No hay eventos activos", ""))
             # Deshabilitar selección
-            lista.bind("<<TreeviewSelect>>", lambda e: lista.selection_remove(lista.selection()))
-
+            def evitar_seleccion(event):
+                # Cancela la selección
+                lista.selection_clear()
+            lista.bind("<<TreeviewSelect>>", evitar_seleccion)
 
     except Exception as e:
         print(e)
@@ -196,10 +205,8 @@ def mostrar_pagina_buscar(vector_paginas):
             conexion.close()
         except:
             pass
-    
-    entrada = ent_buscar.get().strip()
-    entryget="%"+entrada+"%"
-    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, entryget))
+
+    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, ent_buscar))
     btn_buscar.config(state="disabled")
     btn_buscar.place(x=550, y=50, height=30, width=50)
     

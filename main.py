@@ -25,7 +25,7 @@ perfil_usuario.centrarPantalla(500,500,app)
 fuente= ("Source Code Pro")
 #--------------Conexion a la Base de Datos
  
-#creacionPantalla_Principal(app,fuente)
-panel_administracion.creacionPantalla_MenuOrganizador2(app, fuente, "pepito")
+creacionPantalla_Principal(app,fuente)
+
 
 app.mainloop()
