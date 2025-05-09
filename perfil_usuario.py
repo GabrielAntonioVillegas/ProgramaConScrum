@@ -1,3 +1,4 @@
+from tkinter.ttk import Combobox
 from tkinter.ttk import Treeview
 from librerias import * 
 import librerias as lib
@@ -98,8 +99,32 @@ def ocultar_pagina(vector_paginas, paginaMostrar):
     for pagina in vector_paginas:
         if pagina != paginaMostrar:
             pagina.place_forget()
-#--------------------Busqueda por palabras clave de eventos NO ANDA AUN
-def busquedaEvento(lista, ent_buscar):
+#--------------------Cargar opciones combobox
+def cargar_opciones_combobox(campo, tabla):
+    vector_opciones=["Todas"]
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta = (f"SELECT {campo} FROM {tabla}")
+        cursor.execute(consulta)
+        resultados=cursor.fetchall()
+        if resultados:
+            for posicion in resultados:
+                vector_opciones.append(str(posicion[0]))
+        return (vector_opciones)
+    
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! No se pudieron cargar los filtros")
+        return vector_opciones
+    finally:
+        try:
+            conexion.close()
+        except:
+            pass
+
+#--------------------Busqueda por palabras clave de eventos (FALTA AGREGAR FILTRO FECHA TANTO A PARAMETROS COMO CONSULTAS)
+def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones):
 
     lista.unbind("<<TreeviewSelect>>")
 
@@ -109,20 +134,51 @@ def busquedaEvento(lista, ent_buscar):
     try:
         entrada = ent_buscar.get().strip()
         entryget="%"+entrada+"%"
+
+        categoria_seleccionada = cmb_categorias.get()
+        ubicacion_seleccionada = cmb_ubicaciones.get()
+
         conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
-        consulta = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE LOWER(titulo) LIKE LOWER(%s)')
-        cursor.execute(consulta, (entryget,))
+
+        consulta_busqueda_vacia_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo"')
+        consulta_busqueda_vacia_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s)')
+        consulta_busqueda_vacia_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo" AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        consulta_busqueda_vacia_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        consulta_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s)')
+        consulta_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s)')
+        consulta_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        consulta_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        
+        if (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas"):
+            cursor.execute(consulta_busqueda_vacia_sin_filtros)
+        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas"):
+            cursor.execute(consulta_busqueda_vacia_solo_categoria, (categoria_seleccionada,))
+        elif (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada != "Todas"):
+            cursor.execute(consulta_busqueda_vacia_solo_ubicacion, (ubicacion_seleccionada,))
+        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas"):
+            cursor.execute(consulta_busqueda_vacia_categoria_y_ubicacion, (categoria_seleccionada,ubicacion_seleccionada,))
+        elif (entrada != "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas"):
+            cursor.execute(consulta_sin_filtros, (entryget,))
+        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas"):
+            cursor.execute(consulta_solo_categoria, (entryget, categoria_seleccionada,))
+        elif (entrada != "" and categoria_seleccionada == "" and ubicacion_seleccionada != "Todas"):
+            cursor.execute(consulta_solo_ubicacion, (entryget, ubicacion_seleccionada,))
+        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas"):
+            cursor.execute(consulta_categoria_y_ubicacion, (entryget, categoria_seleccionada, ubicacion_seleccionada,))
+        
+        print(cursor.statement)
+        
         resultados=cursor.fetchall()
         if resultados:
             for idevento, titulo, ubicacion, fecha_inicio in resultados:
                 lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
         else:
             lista.insert("", "end", values=("", "", "No se encontraron eventos que coincidan", ""))
-            # Deshabilitar selección
-            def evitar_seleccion(event):
+            def bloquear_click(event):
                 return "break"
-            lista.bind("<Button-1>", evitar_seleccion)
+
+            lista.bind("<ButtonPress-1>", bloquear_click)
 
 
     except Exception as e:
@@ -169,8 +225,35 @@ def mostrar_pagina_buscar(vector_paginas):
 
     ent_buscar.place(x=200, y=50, height=30, width=350)
 
+    lbl_filtros=Label(pagina_buscar, font=(fuente,12), text="Filtros:", background="gainsboro")
+    lbl_filtros.place(x=200, y=100, height=30)
+
+    lbl_categorias=Label(pagina_buscar, font=(fuente,10), text="Categoria:", background="gainsboro")
+    lbl_categorias.place(x=270, y=85, height=20)
+
+    cmb_categorias=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
+    cmb_categorias.place(x=270, y=105, height=20, width=70)
+
+    vector_categorias = cargar_opciones_combobox("nombre","Categoria")
+    cmb_categorias["values"] = vector_categorias
+    cmb_categorias.current(0)
+
+    lbl_ubicacion=Label(pagina_buscar, font=(fuente,10), text="Ubicacion:", background="gainsboro")
+    lbl_ubicacion.place(x=370, y=85, height=20)
+
+    cmb_ubicaciones=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
+    cmb_ubicaciones.place(x=350, y=105, height=20, width=110)
+
+    vector_ubicaciones = cargar_opciones_combobox("direccion","Ubicacion")
+    cmb_ubicaciones["values"]=vector_ubicaciones
+    cmb_ubicaciones.current(0)
+
+    lbl_fechas=Label(pagina_buscar,font=(fuente,10),background="gainsboro",text="Fecha:")
+    lbl_fechas.place(x=500, y=85,height=20)
+    #FALTA FILTRO PARA FECHAS
+
     lista = Treeview(pagina_buscar,columns=("ID", "Título", "Dirección", "Fecha"), show="headings")
-    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=250)
+    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=300)
     lista.heading("ID", text="")
     lista.heading("Título", text="Título")
     lista.heading("Dirección", text="Dirección")
@@ -191,9 +274,10 @@ def mostrar_pagina_buscar(vector_paginas):
         else:
             lista.insert("", "end", values=("", "", "No hay eventos activos", ""))
             # Deshabilitar selección
-            def evitar_seleccion(event):
+            def bloquear_click(event):
                 return "break"
-            lista.bind("<Button-1>", evitar_seleccion)
+
+            lista.bind("<ButtonPress-1>", bloquear_click)
 
     except Exception as e:
         print(e)
@@ -205,7 +289,7 @@ def mostrar_pagina_buscar(vector_paginas):
         except:
             pass
 
-    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, ent_buscar))
+    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, ent_buscar, cmb_categorias, cmb_ubicaciones))
     btn_buscar.config(state="disabled")
     btn_buscar.place(x=550, y=50, height=30, width=50)
     
@@ -350,7 +434,7 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
             cursor = conexion.cursor()
             #CONSULTA PARA VERIFICAR QUE SEA UN ORGANIZADOR O NO-------------------------------------
             consulta1 = "SELECT * FROM Organizador WHERE nombreUsuario = %s"
-            consulta2 = "SELECT id_organizador FROM Organizador WHERE nombreUsuario = %s AND contraseña = %s"
+            consulta2 = "SELECT * FROM Organizador WHERE nombreUsuario = %s AND contraseña = %s"
             #CONSULTA PARA VERIFICAR QUE SEA UN USUARIO O NO---------------------------------
             consulta3 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s"
             consulta4 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s AND Contrasena = %s"
