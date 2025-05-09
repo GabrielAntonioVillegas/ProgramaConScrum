@@ -119,10 +119,10 @@ def busquedaEvento(lista, ent_buscar):
                 lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
         else:
             lista.insert("", "end", values=("", "", "No se encontraron eventos que coincidan", ""))
+            # Deshabilitar selección
             def evitar_seleccion(event):
-                # Cancela la selección
-                lista.selection_clear()
-            lista.bind("<<TreeviewSelect>>", evitar_seleccion)
+                return "break"
+            lista.bind("<Button-1>", evitar_seleccion)
 
 
     except Exception as e:
@@ -192,9 +192,8 @@ def mostrar_pagina_buscar(vector_paginas):
             lista.insert("", "end", values=("", "", "No hay eventos activos", ""))
             # Deshabilitar selección
             def evitar_seleccion(event):
-                # Cancela la selección
-                lista.selection_clear()
-            lista.bind("<<TreeviewSelect>>", evitar_seleccion)
+                return "break"
+            lista.bind("<Button-1>", evitar_seleccion)
 
     except Exception as e:
         print(e)
