@@ -22,6 +22,7 @@ def click_boton(indice, botones, COLOR_NORMAL, COLOR_ACTIVO):
         btn.config(bg=COLOR_NORMAL)
 
     botones[indice].config(bg = COLOR_ACTIVO)
+    
 #-------------------CONEXION BASE DE DATOS
 def iniciarConexion(vectorConexion):
     conexion = mysql.connector.connect(

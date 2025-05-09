@@ -27,6 +27,9 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+#
+#
+#
 #PAGINA EVENTO-------------------------------------------
 def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
@@ -35,8 +38,10 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     pagina_evento.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_evento)
 
-    lbl1 = Label(pagina_evento, text="Crear Evento", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)   
+    lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    #Verificar que existan Ubicaciones y Categorias
 #
 # 
 # 
@@ -148,8 +153,8 @@ def tomar_datos_ubicacionesArbol(event, trv_ubicaciones, ent_id, ent_nomCalle,en
         ent_id.insert(0,valores[0])
 
         aux = valores[1].split(" ")
-        ent_nomCalle.insert(0,aux[0])
-        ent_altura.insert(0,aux[1])
+        ent_nomCalle.insert(0,aux[:-1])
+        ent_altura.insert(0,aux[-1])
 
         ent_id.config(state="readonly")
 #GUARDAR UBICACION---------------------------------------
@@ -445,13 +450,13 @@ def deseleccionarCategorias(event, trv_categorias, ent_id, ent_nom, btn_guardar,
 # 
 # 
 #FUNCION PRINCIPAL=====================================================================================
-def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario):
+def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizador):
     global fuente
     fuente = _fuente
     app_MenuOrg = Toplevel(app)
     app_MenuOrg.title("Sesion Organizador")
     funciones_generales.centrarPantalla(1000, 500, app_MenuOrg)
-
+    
     #PANEL 1 (izquierda, el mas angosto)
     panel1 = Frame(app_MenuOrg, bg="gray")
     panel1.place(x=0, width=200, height=500)
@@ -497,27 +502,27 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario):
 
     btn_principal = Button(app_MenuOrg, text="MENU PRINCIPAL", relief="flat")
     botones.append(btn_principal)
-    btn_principal.place(x=0, y=70, width=200, height=30)
+    btn_principal.place(x=20, y=70, width=160, height=30)
 
     #BOTON CUENTA 
     btn_cuenta = Button(app_MenuOrg, text="CUENTA", relief="flat" )
     botones.append(btn_cuenta)
-    btn_cuenta.place(x=0, y=100, width=200, height=30)
+    btn_cuenta.place(x=20, y=100, width=160, height=30)
 
     #BOTON AÑADIR CATEGORIAS
     btn_categorias = Button(app_MenuOrg, text="CATEGORIAS", relief="flat" )
     botones.append(btn_categorias)
-    btn_categorias.place(x=0, y=130, width=200, height=30)
+    btn_categorias.place(x=20, y=130, width=160, height=30)
 
     #BOTON AÑADIR UBICACIONES
     btn_ubicaciones = Button(app_MenuOrg, text="UBICACIONES", relief="flat" )
     botones.append(btn_ubicaciones)
-    btn_ubicaciones.place(x=0, y=160, width=200, height=30)
+    btn_ubicaciones.place(x=20, y=160, width=160, height=30)
 
     #BOTON CREAR EVENTO
     btn_evento = Button(app_MenuOrg, text="CREAR EVENTO", relief="flat")
     botones.append(btn_evento)
-    btn_evento.place(x=0, y=190, width=200, height=30)
+    btn_evento.place(x=20, y=190, width=160, height=30)
 
     #SE ASIGNAS LAS FUNCIONES A LOS BOTONES YA CREADOS
     btn_principal.config(command=partial(mostrar_pagina_menuPrincipal,vector_paginas, app_MenuOrg, botones, 0))

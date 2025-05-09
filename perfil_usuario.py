@@ -351,7 +351,7 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
             cursor = conexion.cursor()
             #CONSULTA PARA VERIFICAR QUE SEA UN ORGANIZADOR O NO-------------------------------------
             consulta1 = "SELECT * FROM Organizador WHERE nombreUsuario = %s"
-            consulta2 = "SELECT * FROM Organizador WHERE nombreUsuario = %s AND contraseña = %s"
+            consulta2 = "SELECT id_organizador FROM Organizador WHERE nombreUsuario = %s AND contraseña = %s"
             #CONSULTA PARA VERIFICAR QUE SEA UN USUARIO O NO---------------------------------
             consulta3 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s"
             consulta4 = "SELECT * FROM Usuarios WHERE NombreUsuario = %s AND Contrasena = %s"
@@ -363,7 +363,8 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
                 resultado2 = cursor.fetchone()
                 if(resultado2):
                     app_Inse.destroy()
-                    panel_administracion.creacionPantalla_MenuOrganizador2(app,fuente, nombreUsuario)
+                    id_organizador = resultado2[0]
+                    panel_administracion.creacionPantalla_MenuOrganizador2(app,fuente, nombreUsuario, id_organizador)
                     print("Se encontró como ORGANIZADOR")
                 else:
                     messagebox.showerror(title= "Credenciales no Coinciden", 
