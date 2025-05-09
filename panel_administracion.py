@@ -3,19 +3,24 @@ import librerias as lib
 import funciones_generales
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 #FUNCIONES==============================================================================================
-
+COLOR_NORMAL = "#f0f0f0"
+COLOR_ACTIVO = "gainsboro"
 #OCULTAR PAGINA------------------------------------------
 def ocultar_pagina(vector_paginas, paginaMostrar):
     for pagina in vector_paginas:
         if pagina != paginaMostrar:
             pagina.place_forget()
 #PAGINA MENU PRINCIPAL-----------------------------------
-def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg):
+def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
+
     panel2 = vector_paginas[0]
     panel2.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, panel2)
 #PAGINA CUENTA-------------------------------------------
-def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg):
+def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
+
     pagina_cuenta = vector_paginas[1]
     pagina_cuenta.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_cuenta)
@@ -23,18 +28,22 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg):
     lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
 #PAGINA EVENTO-------------------------------------------
-def mostrar_pagina_evento(vector_paginas, app_MenuOrg):
+def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
+
     pagina_evento = vector_paginas[2]
     pagina_evento.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_evento)
 
     lbl1 = Label(pagina_evento, text="Crear Evento", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)   
 #
 # 
 # 
 #PAGINA UBICACIONES--------------------------------------
-def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg):
+def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
+
     pagina_ubicaciones = vector_paginas[4]
     pagina_ubicaciones.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_ubicaciones)
@@ -243,7 +252,9 @@ def deseleccionarUbicaciones(event, trv_ubicaciones, ent_id, ent_nomCalle, ent_a
 # 
 # 
 #PAGINA CATEGORIAS---------------------------------------
-def mostrar_pagina_categorias(vector_paginas, app_MenuOrg):
+def mostrar_pagina_categorias(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
+
     pagina_categoria = vector_paginas[3]
     pagina_categoria.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_categoria)
@@ -482,24 +493,38 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario):
     btn_volver.place(x=10, y=10)
 
     #BOTON MENU PRINCIPAL
-    btn_principal = Button(app_MenuOrg, text="MENU PRINCIPAL", relief="flat", command=partial(mostrar_pagina_menuPrincipal,vector_paginas, app_MenuOrg))
-    btn_principal.place(x=20, y=70, width=160, height=30)
+    botones = []
+
+    btn_principal = Button(app_MenuOrg, text="MENU PRINCIPAL", relief="flat")
+    botones.append(btn_principal)
+    btn_principal.place(x=0, y=70, width=200, height=30)
 
     #BOTON CUENTA 
-    btn_cuenta = Button(app_MenuOrg, text="CUENTA", relief="flat", command=partial(mostrar_pagina_cuenta, vector_paginas, app_MenuOrg))
-    btn_cuenta.place(x=20, y=100, width=160, height=30)
+    btn_cuenta = Button(app_MenuOrg, text="CUENTA", relief="flat" )
+    botones.append(btn_cuenta)
+    btn_cuenta.place(x=0, y=100, width=200, height=30)
 
     #BOTON AÑADIR CATEGORIAS
-    btn_categorias = Button(app_MenuOrg, text="CATEGORIAS", relief="flat", command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg))
-    btn_categorias.place(x=20, y=130, width=160, height=30)
+    btn_categorias = Button(app_MenuOrg, text="CATEGORIAS", relief="flat" )
+    botones.append(btn_categorias)
+    btn_categorias.place(x=0, y=130, width=200, height=30)
 
     #BOTON AÑADIR UBICACIONES
-    btn_ubicaciones = Button(app_MenuOrg, text="UBICACIONES", relief="flat", command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg))
-    btn_ubicaciones.place(x=20, y=160, width=160, height=30)
+    btn_ubicaciones = Button(app_MenuOrg, text="UBICACIONES", relief="flat" )
+    botones.append(btn_ubicaciones)
+    btn_ubicaciones.place(x=0, y=160, width=200, height=30)
 
     #BOTON CREAR EVENTO
-    btn_evento = Button(app_MenuOrg, text="CREAR EVENTO", relief="flat", command=partial(mostrar_pagina_evento, vector_paginas, app_MenuOrg))
-    btn_evento.place(x=20, y=190, width=160, height=30)
+    btn_evento = Button(app_MenuOrg, text="CREAR EVENTO", relief="flat")
+    botones.append(btn_evento)
+    btn_evento.place(x=0, y=190, width=200, height=30)
+
+    #SE ASIGNAS LAS FUNCIONES A LOS BOTONES YA CREADOS
+    btn_principal.config(command=partial(mostrar_pagina_menuPrincipal,vector_paginas, app_MenuOrg, botones, 0))
+    btn_cuenta.config(command=partial(mostrar_pagina_cuenta, vector_paginas, app_MenuOrg, botones, 1))
+    btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
+    btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
+    btn_evento.config(command=partial(mostrar_pagina_evento, vector_paginas, app_MenuOrg, botones, 4))
 
     app_MenuOrg.mainloop()
 

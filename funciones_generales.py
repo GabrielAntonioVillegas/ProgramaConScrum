@@ -15,7 +15,13 @@ def cerrar_abrirVentanas(app1,app2):
     #app2.withdraw()  #Ocultar Ventana
     #Para poder usar deiconify, la ventana a reaparecer debe primero ser ocultada con .withdraw()
     app2.deiconify() #Reaparecer Ventana
+#-------------------Click Boton
+def click_boton(indice, botones, COLOR_NORMAL, COLOR_ACTIVO):
 
+    for btn in botones:
+        btn.config(bg=COLOR_NORMAL)
+
+    botones[indice].config(bg = COLOR_ACTIVO)
 #-------------------CONEXION BASE DE DATOS
 def iniciarConexion(vectorConexion):
     conexion = mysql.connector.connect(
