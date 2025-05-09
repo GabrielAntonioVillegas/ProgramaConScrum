@@ -23,9 +23,8 @@ app.title("Menu Principal")
 perfil_usuario.centrarPantalla(500,500,app)
 #--------------Definicion de Fuentes
 fuente= ("Source Code Pro")
-#--------------Conexion a la Base de Datos
  
 creacionPantalla_Principal(app,fuente)
-
+#panel_administracion.creacionPantalla_MenuOrganizador2(app,fuente, "alumbraEventos",1)
 
 app.mainloop()

@@ -31,17 +31,68 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 #
 #
 #PAGINA EVENTO-------------------------------------------
-def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
 
     pagina_evento = vector_paginas[2]
     pagina_evento.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_evento)
 
+
     lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
 
-    #Verificar que existan Ubicaciones y Categorias
+    #Componentes Graficos
+    parte1 = Frame(pagina_evento)
+    parte1.place(x=10, y=30, width=385, height=460)
+    lbl_titulo1 = Label(parte1, text="Crear / Modificar Evento", font=(fuente, 14, "bold"))
+    lbl_titulo1.place(relx=0.5, anchor="center", y=30)
+
+    parte2 = Frame(pagina_evento)
+    parte2.place(x=405, y=30, width=385, height=460)
+    lbl_titulo2 = Label(parte2, text="Eventos Existentes", font=(fuente, 14, "bold"))
+    lbl_titulo2.place(relx=0.5, anchor="center", y=30)
+
+    trv_evento = ttk.Treeview(parte2,columns=(1, 2, 3, 4), show="headings")
+    trv_evento.place(x=10,y=100, width=370)
+    trv_evento.heading(1, text="")
+    trv_evento.heading(2, text="Título")
+    trv_evento.heading(3, text="Dirección")
+    trv_evento.heading(4, text="Fecha")
+    trv_evento.column(1, width=0, stretch=False)
+    trv_evento.column(2, width=100, anchor="center")
+    trv_evento.column(3, width=150, anchor="center")
+    trv_evento.column(4, width=150, anchor="center")
+   
+def verificar_Ubicaciones_Categorias_Evento():
+    estado = False
+    try:
+        conexion = funciones_generales.iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        consulta = "SELECT 1 FROM Categoria LIMIT 1"
+        cursor.execute(consulta)
+        resultado = cursor.fetchone()
+
+        if resultado:
+            consulta2 = "SELECT 1 FROM Ubicacion LIMIT 1"
+            cursor.execute(consulta2)
+            resultado2 = cursor.fetchone()
+            if resultado2:
+                estado = True 
+
+        
+    except Exception as e:
+        messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+        print (e)
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+
+    return estado
 #
 # 
 # 
@@ -529,7 +580,7 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_cuenta.config(command=partial(mostrar_pagina_cuenta, vector_paginas, app_MenuOrg, botones, 1))
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
-    btn_evento.config(command=partial(mostrar_pagina_evento, vector_paginas, app_MenuOrg, botones, 4))
+    btn_evento.config(command=partial(mostrar_pagina_evento, vector_paginas, app_MenuOrg, botones, 4, id_organizador))
 
     app_MenuOrg.mainloop()
 
