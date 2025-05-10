@@ -2,6 +2,7 @@ from librerias import *
 import librerias as lib
 import funciones_generales
 from tkcalendar import DateEntry
+from datetime import datetime
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 COLOR_NORMAL = "#f0f0f0"
 COLOR_ACTIVO = "gainsboro"
@@ -69,12 +70,13 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     parte1.place(x=10, y=30, width=385, height=460)
 
     lbl_titulo1 = Label(parte1, text="Crear / Modificar Evento", font=(fuente, 14, "bold"))
-    lbl_titulo1.place(relx=0.5, anchor="center", y=20)
+    lbl_titulo1.place(relx=0.5, anchor="center", y=30)
 
     lbl_id = Label(parte1, text="Id")
     lbl_id.place(x=30, y=50)
     ent_id = Entry(parte1)
     ent_id.place(x=30, y=70, width=150, height=20)
+    ent_id.config(state="readonly")
 
     lbl_tit = Label(parte1, text="Titulo")
     lbl_tit.place(x=30, y=100)
@@ -84,26 +86,32 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     lbl_cat = Label(parte1, text="Categoria")
     lbl_cat.place(x=30, y=150)
     combo_cate = ttk.Combobox(parte1)
+    combo_cate.config(state="readonly")
     combo_cate.place(x=30, y=170, width=150, height=20)
 
     lbl_ubi = Label(parte1, text="Ubicacion")
     lbl_ubi.place(x=210, y=150)
     combo_ubi = ttk.Combobox(parte1)
+    combo_ubi.config(state="readonly")
     combo_ubi.place(x=210, y=170, width=150, height=20)
 
     lbl_fe_ini = Label(parte1, text="Fecha Inicio")
     lbl_fe_ini.place(x=30, y=200)
-    dateEntry_inicio = DateEntry(parte1)
+    dateEntry_inicio = DateEntry(parte1,date_pattern='yyyy-mm-dd')
+    dateEntry_inicio.config(state="readonly")
     dateEntry_inicio.place(x=30, y=220, width=150, height=20)
 
     lbl_fe_fin = Label(parte1, text="Fecha Final")
     lbl_fe_fin.place(x=210, y=200)
     dateEntry_fin = DateEntry(parte1)
+    dateEntry_fin.config(state="readonly",date_pattern='yyyy-mm-dd')
     dateEntry_fin.place(x=210, y=220, width=150, height=20)
 
+    lista = ["activo","cancelado","finalizado"]
     lbl_estado = Label(parte1, text="Estado")
     lbl_estado.place(x=30, y=250)
-    combo_est = ttk.Combobox(parte1)
+    combo_est = ttk.Combobox(parte1, values=lista)
+    combo_est.config(state="readonly")
     combo_est.place(x=30, y=270, width=150, height=20)
 
     lbl_desc = Label(parte1, text="Descripcion")
@@ -111,18 +119,11 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     ent_desc = Entry(parte1)
     ent_desc.place(x=30, y=320, width=330, height=40)
 
-    btn_guardar = Button(parte1, text="Guardar Cambios")
-    btn_guardar.place(x=115, y=375, width=150, height=30)
-
-    btn_eliminar = Button(parte1, text="Eliminar Ubicacion")
-    btn_eliminar.place(x=115, y=415, width=150, height=30)
-    btn_eliminar.config(state="disable")
-
     #Eventos Existentes 
     parte2 = Frame(pagina_evento)
     parte2.place(x=405, y=30, width=385, height=460)
     lbl_titulo2 = Label(parte2, text="Eventos Existentes", font=(fuente, 14, "bold"))
-    lbl_titulo2.place(relx=0.5, anchor="center", y=20)
+    lbl_titulo2.place(relx=0.5, anchor="center", y=30)
 
     trv_evento = ttk.Treeview(parte2,columns=(1, 2, 3, 4), show="headings",height="15")
     trv_evento.place(x=10,y=100, width=370)
@@ -131,11 +132,20 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     trv_evento.heading(3, text="Dirección")
     trv_evento.heading(4, text="Fecha")
     trv_evento.column(1, width=0, stretch=False)
-    trv_evento.column(2, width=100, anchor="center")
-    trv_evento.column(3, width=150, anchor="center")
-    trv_evento.column(4, width=150, anchor="center")
+    trv_evento.column(2, width=80)
+    trv_evento.column(3, width=140)
+    trv_evento.column(4, width=200)
 
     mostrar_eventosArbol(trv_evento)
+    dictCategorias, dictUbicaciones = mostrar_CategoriasUbicaciones(combo_cate, combo_ubi)
+
+    btn_guardar = Button(parte1, text="Guardar Cambios", command=partial(guardar_evento,ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc,id_organizador,  dictCategorias, dictUbicaciones, mostrar_eventosArbol,trv_evento))
+    btn_guardar.place(x=115, y=375, width=150, height=30)
+
+    btn_eliminar = Button(parte1, text="Eliminar Ubicacion")
+    btn_eliminar.place(x=115, y=415, width=150, height=30)
+    btn_eliminar.config(state="disable")
+
 #VERIFICAR QUE EXISTAN CATEGORIAS Y UBICACIONES----------   
 def verificar_Ubicaciones_Categorias_Evento():
     estado = False
@@ -176,11 +186,15 @@ def mostrar_eventosArbol(arbol_eventos):
             resultado = cursor.fetchall()
             arbol_eventos.delete(*arbol_eventos.get_children())
 
-            arbol_eventos.insert(1, "end",values=resultado[0])
-            arbol_eventos.insert(2, "end",values=resultado[1])
-            arbol_eventos.insert(3, "end",values=resultado[2])
-            fechas = resultado[4] + resultado[5]
-            arbol_eventos.insert(4,"end", values=fechas)
+            for fila in resultado:
+                id_evento, titulo, direccion, fecha_ini, fecha_fin = fila
+                
+                #Formatear las fechas para mostrar solo la fecha (sin la hora)
+                fecha_ini_formateada = datetime.strptime(str(fecha_ini), "%Y-%m-%d %H:%M:%S").strftime("%d-%m-%Y")
+                fecha_fin_formateada = datetime.strptime(str(fecha_fin), "%Y-%m-%d %H:%M:%S").strftime("%d-%m-%Y")
+                
+                fechas = f"{fecha_ini_formateada} al {fecha_fin_formateada}"
+                arbol_eventos.insert("", "end", values=(id_evento, titulo, direccion, fechas))
     except Exception as e:
         messagebox.showerror(title="Error de Conexión", message="¡Ups! Hubo un error al conectar con la Base de Datos")
         print("Error al mostrar eventos:", e)
@@ -190,6 +204,94 @@ def mostrar_eventosArbol(arbol_eventos):
             conexion.close()
         except:
             pass
+#MOSTRAR CATEGORIAS Y UBICACIONES------------------------
+def mostrar_CategoriasUbicaciones(combo_cate, combo_ubi):
+    vectorCategorias = []
+    vectorUbicaciones = []
+    dictCategorias = {}
+    dictUbicaciones = {}
+
+    try:
+        conexion = funciones_generales.iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        consulta1 = "SELECT id_categoria, nombre FROM Categoria ORDER BY id_categoria ASC"
+        consulta2 = "SELECT id_ubicacion, direccion FROM Ubicacion ORDER BY id_ubicacion ASC"
+        
+        cursor.execute(consulta1)
+        resultado = cursor.fetchall()
+
+        cursor.execute(consulta2)
+        resultado2 = cursor.fetchall()
+
+        if resultado and resultado2:
+            for id_cat, nombre in resultado:
+                vectorCategorias.append(nombre)
+                dictCategorias[nombre] = id_cat
+
+            for id_ubi, direccion in resultado2:
+                vectorUbicaciones.append(direccion)
+                dictUbicaciones[direccion] = id_ubi
+
+            combo_cate["values"] = vectorCategorias
+            combo_ubi["values"] = vectorUbicaciones
+
+    except Exception as e:
+        messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+        print(e)
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+
+    return dictCategorias, dictUbicaciones
+#GUARDAR EVENTO------------------------------------------
+def guardar_evento(ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc, id_organizador,  dictCategorias, dictUbicaciones, arbol_eventos):
+    if(len(ent_tit.get()) > 0 and len(combo_cate.get()) > 0 and len(combo_ubi.get()) > 0 and len(dateEntry_inicio.get()) > 0 and
+       len(dateEntry_fin.get()) > 0 and len(combo_est.get()) > 0):
+        id = ent_id.get()
+        titulo = ent_tit.get()
+        #categoria = combo_cate.get()
+        #ubicacion = combo_ubi.get()
+        id_categoria = dictCategorias[combo_cate.get()]
+        id_ubicacion = dictUbicaciones[combo_ubi.get()]
+        fechaInicio = dateEntry_inicio.get()
+        fechaFinal = dateEntry_fin.get()
+        descripcion = ent_desc.get()    
+        estado = combo_est.get()
+        try:
+            conexion = funciones_generales.iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
+            
+            consulta = "SELECT COUNT(*) FROM Evento WHERE titulo = %s and id_organizador = %s and id_categoria = %s and id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s and estado = %s"
+            cursor.execute(consulta, (titulo, id_organizador, id_categoria, id_ubicacion, fechaInicio, fechaFinal, estado, ))
+            resultado = cursor.fetchone()[0]
+            if(resultado > 0):
+                messagebox.showerror(title="Error", message="Este evento ya está registrado.")
+            else:
+                if(len(ent_id.get()) > 0):
+                    pass
+                else:
+                    consulta = "INSERT INTO Evento (id_organizador, titulo, descripcion, id_categoria, fecha_inicio, fecha_fin, estado, id_ubicacion) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                    cursor.execute(consulta, (id_organizador, titulo, descripcion, id_categoria,  fechaInicio, fechaFinal, estado, id_ubicacion, ))
+                    conexion.commit()
+                    messagebox.showinfo(title="Éxito", message="¡Evento Registrado Correctamente!")
+            
+            mostrar_eventosArbol(arbol_eventos)
+        except Exception as e:
+            messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
+            print (e)
+        finally:
+            try:
+                cursor.close()
+                conexion.close()
+            except:
+                pass
+        
+    else:
+        messagebox.showerror(title="Campos vacios", message="Por favor llene los campos")
 # 
 #
 #  
