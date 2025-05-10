@@ -1,10 +1,14 @@
 from librerias import * 
 import librerias as lib
 import funciones_generales
+from tkcalendar import DateEntry
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
-#FUNCIONES==============================================================================================
 COLOR_NORMAL = "#f0f0f0"
 COLOR_ACTIVO = "gainsboro"
+
+
+#FUNCIONES==============================================================================================
+
 #OCULTAR PAGINA------------------------------------------
 def ocultar_pagina(vector_paginas, paginaMostrar):
     for pagina in vector_paginas:
@@ -31,6 +35,25 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 #
 #
 #PAGINA EVENTO-------------------------------------------
+def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
+    if(verificar_Ubicaciones_Categorias_Evento() == False):
+        mostrar_pagina_eventoNoPosible(app_MenuOrg, vector_paginas)
+    else:
+        mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador)
+#MOSTRAR PAGINA EN CASO DE EVENTO NO POSIBLE-------------
+def mostrar_pagina_eventoNoPosible(app_MenuOrg, vector_paginas):
+    pagina_evento = vector_paginas[5]
+    pagina_evento.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_evento)
+
+    lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    parte1 = Frame(pagina_evento)
+    parte1.place(x=10, y=30, width=780, height=460)
+    lbl_titulo1 = Label(parte1, text="¡Ups! Es imposible Crear un Evento si no\nhay al menos 1 Categoria y 1 Ubicacion Registradas", font=(fuente, 14, "bold"))
+    lbl_titulo1.place(relx=0.5, anchor="center", y=30)
+#MOSTRAR PAGINA EVENTO-----------------------------------
 def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
 
@@ -38,22 +61,70 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     pagina_evento.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_evento)
 
-
     lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-
-    #Componentes Graficos
+    
+    # Componentes Graficos
     parte1 = Frame(pagina_evento)
     parte1.place(x=10, y=30, width=385, height=460)
-    lbl_titulo1 = Label(parte1, text="Crear / Modificar Evento", font=(fuente, 14, "bold"))
-    lbl_titulo1.place(relx=0.5, anchor="center", y=30)
 
+    lbl_titulo1 = Label(parte1, text="Crear / Modificar Evento", font=(fuente, 14, "bold"))
+    lbl_titulo1.place(relx=0.5, anchor="center", y=20)
+
+    lbl_id = Label(parte1, text="Id")
+    lbl_id.place(x=30, y=50)
+    ent_id = Entry(parte1)
+    ent_id.place(x=30, y=70, width=150, height=20)
+
+    lbl_tit = Label(parte1, text="Titulo")
+    lbl_tit.place(x=30, y=100)
+    ent_tit = Entry(parte1)
+    ent_tit.place(x=30, y=120, width=150, height=20)
+
+    lbl_cat = Label(parte1, text="Categoria")
+    lbl_cat.place(x=30, y=150)
+    combo_cate = ttk.Combobox(parte1)
+    combo_cate.place(x=30, y=170, width=150, height=20)
+
+    lbl_ubi = Label(parte1, text="Ubicacion")
+    lbl_ubi.place(x=210, y=150)
+    combo_ubi = ttk.Combobox(parte1)
+    combo_ubi.place(x=210, y=170, width=150, height=20)
+
+    lbl_fe_ini = Label(parte1, text="Fecha Inicio")
+    lbl_fe_ini.place(x=30, y=200)
+    dateEntry_inicio = DateEntry(parte1)
+    dateEntry_inicio.place(x=30, y=220, width=150, height=20)
+
+    lbl_fe_fin = Label(parte1, text="Fecha Final")
+    lbl_fe_fin.place(x=210, y=200)
+    dateEntry_fin = DateEntry(parte1)
+    dateEntry_fin.place(x=210, y=220, width=150, height=20)
+
+    lbl_estado = Label(parte1, text="Estado")
+    lbl_estado.place(x=30, y=250)
+    combo_est = ttk.Combobox(parte1)
+    combo_est.place(x=30, y=270, width=150, height=20)
+
+    lbl_desc = Label(parte1, text="Descripcion")
+    lbl_desc.place(x=30, y=300)
+    ent_desc = Entry(parte1)
+    ent_desc.place(x=30, y=320, width=330, height=40)
+
+    btn_guardar = Button(parte1, text="Guardar Cambios")
+    btn_guardar.place(x=115, y=375, width=150, height=30)
+
+    btn_eliminar = Button(parte1, text="Eliminar Ubicacion")
+    btn_eliminar.place(x=115, y=415, width=150, height=30)
+    btn_eliminar.config(state="disable")
+
+    #Eventos Existentes 
     parte2 = Frame(pagina_evento)
     parte2.place(x=405, y=30, width=385, height=460)
     lbl_titulo2 = Label(parte2, text="Eventos Existentes", font=(fuente, 14, "bold"))
-    lbl_titulo2.place(relx=0.5, anchor="center", y=30)
+    lbl_titulo2.place(relx=0.5, anchor="center", y=20)
 
-    trv_evento = ttk.Treeview(parte2,columns=(1, 2, 3, 4), show="headings")
+    trv_evento = ttk.Treeview(parte2,columns=(1, 2, 3, 4), show="headings",height="15")
     trv_evento.place(x=10,y=100, width=370)
     trv_evento.heading(1, text="")
     trv_evento.heading(2, text="Título")
@@ -63,25 +134,23 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     trv_evento.column(2, width=100, anchor="center")
     trv_evento.column(3, width=150, anchor="center")
     trv_evento.column(4, width=150, anchor="center")
-   
+
+    mostrar_eventosArbol(trv_evento)
+#VERIFICAR QUE EXISTAN CATEGORIAS Y UBICACIONES----------   
 def verificar_Ubicaciones_Categorias_Evento():
     estado = False
     try:
         conexion = funciones_generales.iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
-
         consulta = "SELECT 1 FROM Categoria LIMIT 1"
         cursor.execute(consulta)
         resultado = cursor.fetchone()
-
         if resultado:
             consulta2 = "SELECT 1 FROM Ubicacion LIMIT 1"
             cursor.execute(consulta2)
             resultado2 = cursor.fetchone()
             if resultado2:
                 estado = True 
-
-        
     except Exception as e:
         messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
         print (e)
@@ -91,15 +160,43 @@ def verificar_Ubicaciones_Categorias_Evento():
             conexion.close()
         except:
             pass
-
     return estado
+#MOSTRAR EVENTOS ARBOL-----------------------------------
+def mostrar_eventosArbol(arbol_eventos):
+    try:
+        conexion = funciones_generales.iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM Evento")
+        cantidad = cursor.fetchone()[0]
+        if cantidad ==0:
+            arbol_eventos.insert("","end", values=("-","-","Ningun Evento por ahora"))
+        else:
+            cursor.execute("SELECT Evento.id_evento, Evento.titulo, Ubicacion.direccion, Evento.fecha_inicio, Evento.fecha_fin FROM Evento JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion")
+            resultado = cursor.fetchall()
+            arbol_eventos.delete(*arbol_eventos.get_children())
+
+            arbol_eventos.insert(1, "end",values=resultado[0])
+            arbol_eventos.insert(2, "end",values=resultado[1])
+            arbol_eventos.insert(3, "end",values=resultado[2])
+            fechas = resultado[4] + resultado[5]
+            arbol_eventos.insert(4,"end", values=fechas)
+    except Exception as e:
+        messagebox.showerror(title="Error de Conexión", message="¡Ups! Hubo un error al conectar con la Base de Datos")
+        print("Error al mostrar eventos:", e)
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+# 
 #
-# 
-# 
+#  
 #PAGINA UBICACIONES--------------------------------------
 def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
+    
     pagina_ubicaciones = vector_paginas[4]
     pagina_ubicaciones.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_ubicaciones)
@@ -310,7 +407,7 @@ def deseleccionarUbicaciones(event, trv_ubicaciones, ent_id, ent_nomCalle, ent_a
 #PAGINA CATEGORIAS---------------------------------------
 def mostrar_pagina_categorias(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
+    
     pagina_categoria = vector_paginas[3]
     pagina_categoria.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_categoria)
@@ -522,22 +619,26 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
 
     #PAGINA CUENTA
     pagina_cuenta = Frame(app_MenuOrg, background="gainsboro")
-    pagina_cuenta.place(x=200, width=800, height=500)
+    #pagina_cuenta.place(x=200, width=800, height=500)
 
     #PAGINA EVENTO
     pagina_evento = Frame(app_MenuOrg, background="gainsboro")
-    pagina_evento.place(x=200, width=800, height=500)
+    #pagina_evento.place(x=200, width=800, height=500)
+    
+    #PAGINA EVENTO EN CASO DE QUE NO HAYA CATEGORIA Y/O UBICACIONES
+    pagina_eventoMala = Frame(app_MenuOrg, bg="gainsboro")
+    pagina_eventoMala.place(x=200, width=800, height=500)
 
     #PAGINA CATEGORIAS
     pagina_categoria = Frame(app_MenuOrg, background="gainsboro")
-    pagina_categoria.place(x=200, width=800, height=500)
+    #pagina_categoria.place(x=200, width=800, height=500)
 
     #PAGINA UBICACIONES
     pagina_ubicaciones = Frame(app_MenuOrg, background="gainsboro")
-    pagina_ubicaciones.place(x=200, width=800, height=500)
+    #pagina_ubicaciones.place(x=200, width=800, height=500)
 
     #VECTOR CON TODOS LAS PAGINAS
-    vector_paginas = [panel2, pagina_cuenta, pagina_evento, pagina_categoria, pagina_ubicaciones]
+    vector_paginas = [panel2, pagina_cuenta, pagina_evento, pagina_categoria, pagina_ubicaciones, pagina_eventoMala]
 
     for i in range(len(vector_paginas)):
         if vector_paginas[i] != panel2:
@@ -580,7 +681,9 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_cuenta.config(command=partial(mostrar_pagina_cuenta, vector_paginas, app_MenuOrg, botones, 1))
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
-    btn_evento.config(command=partial(mostrar_pagina_evento, vector_paginas, app_MenuOrg, botones, 4, id_organizador))
+    btn_evento.config(command=partial(eleccion_paginaEvento,vector_paginas, app_MenuOrg, botones, 4, id_organizador))
+
+    btn_principal.config(bg="gainsboro")
 
     app_MenuOrg.mainloop()
 

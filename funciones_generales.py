@@ -9,6 +9,8 @@ def centrarPantalla(ancho,alto,app):
     y = (alto_pantalla // 2) - (alto // 2)
 
     app.geometry(f"{ancho}x{alto}+{x}+{y}")
+
+
 #--------------------Cerrar Ventana
 def cerrar_abrirVentanas(app1,app2):
     app1.destroy()   #Ventana a Cerrar
@@ -22,7 +24,6 @@ def click_boton(indice, botones, COLOR_NORMAL, COLOR_ACTIVO):
         btn.config(bg=COLOR_NORMAL)
 
     botones[indice].config(bg = COLOR_ACTIVO)
-    
 #-------------------CONEXION BASE DE DATOS
 def iniciarConexion(vectorConexion):
     conexion = mysql.connector.connect(
