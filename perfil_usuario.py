@@ -1,9 +1,13 @@
-from tkinter.ttk import Combobox
+from tkinter import BooleanVar
+import tkinter as tk
+from tkinter.ttk import Checkbutton, Combobox
 from tkinter.ttk import Treeview
 from librerias import * 
 import librerias as lib
 import funciones_generales
 import panel_administracion
+from tkcalendar import DateEntry
+from datetime import datetime
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 
 #FUNCIONES=============================================================================
@@ -124,7 +128,7 @@ def cargar_opciones_combobox(campo, tabla):
             pass
 
 #--------------------Busqueda por palabras clave de eventos (FALTA AGREGAR FILTRO FECHA TANTO A PARAMETROS COMO CONSULTAS)
-def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones):
+def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas):
 
     lista.unbind("<<TreeviewSelect>>")
 
@@ -136,39 +140,140 @@ def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones):
         entryget="%"+entrada+"%"
 
         categoria_seleccionada = cmb_categorias.get()
+
         ubicacion_seleccionada = cmb_ubicaciones.get()
+
+        fecha_formateada = dateEntry_fecha.get_date()
+
+        print(fecha_formateada)
+        print(estado_boton_fechas.get())
 
         conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
 
-        consulta_busqueda_vacia_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo"')
-        consulta_busqueda_vacia_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s)')
-        consulta_busqueda_vacia_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo" AND LOWER(Ubicacion.direccion) = LOWER(%s)')
-        consulta_busqueda_vacia_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
-        consulta_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s)')
-        consulta_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s)')
-        consulta_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
-        consulta_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        consulta_busqueda_vacia_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                'FROM Evento '
+                                                'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                'WHERE estado="activo"')
         
-        if (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas"):
+        consulta_busqueda_vacia_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                  'FROM Evento '
+                                                  'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                  'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                                  'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s)')
+        
+        consulta_busqueda_vacia_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                'FROM Evento '
+                                                'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                'WHERE estado="activo" AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        
+        consulta_busqueda_vacia_solo_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                            'FROM Evento '
+                                            'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                            'WHERE estado="activo" AND DATE(fecha_inicio) = %s')
+        
+        consulta_busqueda_vacia_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                        'FROM Evento '
+                                                        'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                        'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                                        'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        
+        consulta_busqueda_vacia_categoria_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                    'FROM Evento '
+                                                    'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                    'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                                    'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+        
+        consulta_busqueda_vacia_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                    'FROM Evento '
+                                                    'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                    'WHERE estado="activo" AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+        
+        consulta_busqueda_vacia_categoria_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                            'FROM Evento '
+                                                            'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                            'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                                            'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+        
+        consulta_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                'FROM Evento '
+                                'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s)')
+        
+        consulta_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                    'FROM Evento '
+                                    'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                    'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s)')
+        
+        consulta_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                    'FROM Evento '
+                                    'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+
+        consulta_solo_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                'FROM Evento '
+                                'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND DATE(fecha_inicio) = %s')
+        
+        consulta_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                        'FROM Evento '
+                                        'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                        'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                        'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+        
+        consulta_categoria_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                    'FROM Evento '
+                                    'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                    'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+        
+        consulta_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                    'FROM Evento '
+                                    'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+
+        consulta_categoria_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
+                                                'FROM Evento '
+                                                'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
+                                                'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
+                                                'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+
+        if (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_busqueda_vacia_sin_filtros)
-        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas"):
+        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_busqueda_vacia_solo_categoria, (categoria_seleccionada,))
-        elif (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada != "Todas"):
+        elif (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_busqueda_vacia_solo_ubicacion, (ubicacion_seleccionada,))
-        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas"):
+        elif (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_busqueda_vacia_solo_fecha, (fecha_formateada,))
+        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_busqueda_vacia_categoria_y_ubicacion, (categoria_seleccionada,ubicacion_seleccionada,))
-        elif (entrada != "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas"):
+        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_busqueda_vacia_categoria_y_fecha, (categoria_seleccionada, fecha_formateada,))
+        elif (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_busqueda_vacia_ubicacion_y_fecha, (ubicacion_seleccionada, fecha_formateada,))
+        elif (entrada == "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_busqueda_vacia_categoria_ubicacion_y_fecha, (categoria_seleccionada, ubicacion_seleccionada, fecha_formateada,))
+        elif (entrada != "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_sin_filtros, (entryget,))
-        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas"):
+        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_solo_categoria, (entryget, categoria_seleccionada,))
-        elif (entrada != "" and categoria_seleccionada == "" and ubicacion_seleccionada != "Todas"):
+        elif (entrada != "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_solo_ubicacion, (entryget, ubicacion_seleccionada,))
-        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas"):
+        elif (entrada != "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_solo_fecha, (entryget, fecha_formateada,))
+        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_categoria_y_ubicacion, (entryget, categoria_seleccionada, ubicacion_seleccionada,))
+        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_categoria_y_fecha, (entryget, categoria_seleccionada, fecha_formateada,))
+        elif (entrada != "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_ubicacion_y_fecha, (entryget, ubicacion_seleccionada, fecha_formateada,))
+        elif (entrada != "" and categoria_seleccionada != "Todas" and ubicacion_seleccionada != "Todas" and estado_boton_fechas.get() == True):
+            cursor.execute(consulta_categoria_ubicacion_y_fecha, (entryget, categoria_seleccionada, ubicacion_seleccionada, fecha_formateada,))
         
         print(cursor.statement)
-        
+
         resultados=cursor.fetchall()
         if resultados:
             for idevento, titulo, ubicacion, fecha_inicio in resultados:
@@ -198,6 +303,7 @@ def mostrar_pagina_principal(vector_paginas):
     ocultar_pagina(vector_paginas, pagina_principal)
 #-------------------Mostrar pagina buscar
 def mostrar_pagina_buscar(vector_paginas):
+
     pagina_buscar = vector_paginas[1]
     pagina_buscar.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_buscar)
@@ -232,7 +338,7 @@ def mostrar_pagina_buscar(vector_paginas):
     lbl_categorias.place(x=270, y=85, height=20)
 
     cmb_categorias=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
-    cmb_categorias.place(x=270, y=105, height=20, width=70)
+    cmb_categorias.place(x=268, y=105, height=20, width=70)
 
     vector_categorias = cargar_opciones_combobox("nombre","Categoria")
     cmb_categorias["values"] = vector_categorias
@@ -248,9 +354,23 @@ def mostrar_pagina_buscar(vector_paginas):
     cmb_ubicaciones["values"]=vector_ubicaciones
     cmb_ubicaciones.current(0)
 
-    lbl_fechas=Label(pagina_buscar,font=(fuente,10),background="gainsboro",text="Fecha:")
-    lbl_fechas.place(x=500, y=85,height=20)
+    lbl_fechas=Label(pagina_buscar,font=(fuente,10),background="gainsboro",text="Filtrar por fecha:")
+    lbl_fechas.place(x=480, y=85,height=20)
+
     #FALTA FILTRO PARA FECHAS
+
+    dateEntry_fecha = DateEntry(pagina_buscar,date_pattern='yyyy-mm-dd')
+    dateEntry_fecha.config(state="readonly")
+
+    def mostrar_filtro_fecha(dateEntry_fecha):
+        if estado_boton_fechas.get():
+            dateEntry_fecha.place(x=475, y=105, height=20, width=125)
+        else:
+            dateEntry_fecha.place_forget()
+    
+    estado_boton_fechas=BooleanVar()
+    chk_fechas=tk.Checkbutton(pagina_buscar, variable=estado_boton_fechas, background="gainsboro",command=partial(mostrar_filtro_fecha,dateEntry_fecha))
+    chk_fechas.place(x=580, y=86,height=20, width=20)
 
     lista = Treeview(pagina_buscar,columns=("ID", "Título", "Dirección", "Fecha"), show="headings")
     lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=300)
@@ -289,7 +409,7 @@ def mostrar_pagina_buscar(vector_paginas):
         except:
             pass
 
-    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, ent_buscar, cmb_categorias, cmb_ubicaciones))
+    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas))
     btn_buscar.config(state="disabled")
     btn_buscar.place(x=550, y=50, height=30, width=50)
     
