@@ -136,10 +136,14 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
 
         def doble_click(event):
 
+            seleccion = lista.selection()
+            if not seleccion:
+                return  # No hacer nada si no hay selección
+            
             item_id = lista.selection()[0]
             valores = lista.item(item_id, "values")
             id_evento = valores[0]
-            ver_detalles_evento(app, id_evento, lista)
+            ver_detalles_evento(app, fuente, id_evento, lista)
         
         lista.bind("<Double-1>", doble_click) #volver a habilitar abrir detalles
     
@@ -147,6 +151,7 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
     ventanaDetalles.title("Detalles del evento")
     ventanaDetalles.protocol("WM_DELETE_WINDOW", cerrar_ventana_detalle) #que hacer cuando se cierra la ventana manualmente
     centrarPantalla(500,500,ventanaDetalles)
+    ventanaDetalles.resizable(False,False)
 
     try:
         conexion = iniciarConexion(vectorConexion)
@@ -162,8 +167,8 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
         titulo = resultado[2]
         descripcion = resultado[3]
         id_categoria = resultado[4]
-        fecha_inicio = resultado[5].strftime("%Y-%m-%d %H:%M")
-        fecha_fin = resultado[6].strftime("%Y-%m-%d %H:%M")
+        fecha_inicio = resultado[5].strftime("%d-%m-%Y %H:%M")
+        fecha_fin = resultado[6].strftime("%d-%m-%Y %H:%M")
         
         #OBTENER FECHA DEL TREEVIEW
         item_id = lista.selection()[0]
@@ -171,8 +176,40 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
 
         direccion = valores[2]
 
-        lbl_titulo = Label(ventanaDetalles, text=("Titulo del evento: "+titulo), font = (fuente, 12))
+        lbl_titulo = Label(ventanaDetalles, text=("Titulo del evento: "+titulo), font = (fuente, 10))
+        lbl_titulo.place(relx=0.5, y=20, anchor="center")
 
+        lbl_descripcion = Label(ventanaDetalles, text=("Descripcion: "+descripcion), wraplength=400, font = (fuente,10))
+        lbl_descripcion.place(relx=0.5, y=40, anchor="center")
+        
+        #OBTENER NOMBRE DE LA CATEGORIA
+        consulta = ("SELECT nombre FROM Categoria WHERE id_categoria = %s")
+        cursor.execute(consulta, (id_categoria,))
+
+        resultado = cursor.fetchone()
+
+        categoria = resultado[0]
+
+        lbl_categoria = Label(ventanaDetalles, text=("Categoria: "+categoria), font=(fuente, 10))
+        lbl_categoria.place(relx=0.5, y=130, anchor="center")
+
+        lbl_fecha = Label(ventanaDetalles, font=(fuente,10))
+        lbl_año = Label(ventanaDetalles, text=("Año: "+fecha_inicio[6:10]), font=(fuente,10))
+        lbl_año.place(relx=0.5, y=150, anchor="center")
+
+        if (fecha_inicio == fecha_fin):
+            lbl_fecha.configure(text=("Fecha: "+fecha_inicio[0:5]+" a las "+fecha_inicio[11:]+"hs"))
+        elif (fecha_inicio[0:10] == fecha_fin[0:10] and fecha_inicio[11:] != fecha_fin[11:]):
+            lbl_fecha.configure(text=("Fecha: "+fecha_inicio[0:5]+" desde las "+fecha_inicio[11:]+"hs hasta las "+fecha_fin[11:]+"hs"))
+        elif (fecha_inicio != fecha_fin):
+            lbl_fecha.configure(text=("Fecha: Desde el "+fecha_inicio[0:5]+" a las "+fecha_inicio[11:]+"hs hasta el "+fecha_fin[0:5]+" a las "+fecha_fin[11:]+"hs"))
+
+        lbl_fecha.place(relx=0.5, y=170, anchor="center")
+
+        lbl_direccion = Label(ventanaDetalles, text="Direccion: "+direccion, font=(fuente,10))
+        lbl_direccion.place(relx=0.5, y=190, anchor="center")
+
+        #FALTA AGREGAR BOTON AGREGAR CATEGORIA A FAVORITOS Y AGREGAR ENTRADAS AL CARRITO
 
 
     except Exception as e:
@@ -186,9 +223,7 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
         except:
             pass
 #--------------------Busqueda por palabras clave de eventos
-def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas):
-
-    lista.unbind("<<TreeviewSelect>>")
+def busquedaEvento(app,lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas):
 
     for item in lista.get_children():
         lista.delete(item)
@@ -334,9 +369,14 @@ def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry
 
         resultados=cursor.fetchall()
         if resultados:
+
+            lista.unbind("<ButtonPress-1>") #Desbloquear seleccion
+
             for idevento, titulo, ubicacion, fecha_inicio in resultados:
                 lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
+
         else:
+
             lista.insert("", "end", values=("", "", "No se encontraron eventos que coincidan", ""))
             def bloquear_click(event):
                 return "break"
@@ -368,6 +408,16 @@ def mostrar_pagina_buscar(app,vector_paginas):
 
     lbl1=Label(pagina_buscar,text="Buscar eventos", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    def limpiar_seleccion_lista(event):
+        widget_actual = event.widget
+        if not str(widget_actual).startswith(str(lista)):
+            lista.selection_remove(lista.selection())
+    
+    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
+                                                                #Cuando se clickee cualquier parte que no sea
+                                                                #un evento del treeview, se desenfoque
+                                                                #el seleccionado anteriormente
 
     #funciones locales de placeholder (texto de sugerencia del entry)
     def clickeado(event):
@@ -440,7 +490,9 @@ def mostrar_pagina_buscar(app,vector_paginas):
     lista.column("Fecha", width=150, anchor="center")
 
     def doble_click(event):
-
+        seleccion = lista.selection()
+        if not seleccion:
+            return  # No hacer nada si no hay selección
         item_id = lista.selection()[0]
         valores = lista.item(item_id, "values")
         id_evento = valores[0]
@@ -473,7 +525,7 @@ def mostrar_pagina_buscar(app,vector_paginas):
         except:
             pass
 
-    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas))
+    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, app, lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas))
     btn_buscar.config(state="disabled")
     btn_buscar.place(x=550, y=50, height=30, width=50)
     
@@ -680,9 +732,12 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
         except Exception as e:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
             print (e)
-        finally:      
-            cursor.close()
-            conexion.close()
+        finally:
+            try:      
+                cursor.close()
+                conexion.close()
+            except:
+                pass
     else:
         messagebox.showerror(title="Valores Invalidos", message="Por favor llene los campos")
         ent_usu.delete(0,END)
