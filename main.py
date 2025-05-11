@@ -25,5 +25,5 @@ perfil_usuario.centrarPantalla(500,500,app)
 fuente= ("Source Code Pro")
  
 creacionPantalla_Principal(app,fuente)
-
+#perfil_usuario.creacionPantalla_MenuUsuario(app,fuente,"maxmun1")
 app.mainloop()

@@ -126,8 +126,66 @@ def cargar_opciones_combobox(campo, tabla):
             conexion.close()
         except:
             pass
+#--------------------Crear Ventana Detalles Evento
+def ver_detalles_evento(app, fuente, id_evento,lista):
 
-#--------------------Busqueda por palabras clave de eventos (FALTA AGREGAR FILTRO FECHA TANTO A PARAMETROS COMO CONSULTAS)
+    lista.unbind("<Double-1>") #Deshabilitar abrir detalles con dobleclick
+    
+    def cerrar_ventana_detalle():
+        ventanaDetalles.destroy()
+
+        def doble_click(event):
+
+            item_id = lista.selection()[0]
+            valores = lista.item(item_id, "values")
+            id_evento = valores[0]
+            ver_detalles_evento(app, id_evento, lista)
+        
+        lista.bind("<Double-1>", doble_click) #volver a habilitar abrir detalles
+    
+    ventanaDetalles = tk.Toplevel(app)
+    ventanaDetalles.title("Detalles del evento")
+    ventanaDetalles.protocol("WM_DELETE_WINDOW", cerrar_ventana_detalle) #que hacer cuando se cierra la ventana manualmente
+    centrarPantalla(500,500,ventanaDetalles)
+
+    try:
+        conexion = iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        consulta = ("SELECT * FROM Evento WHERE id_evento = %s")
+
+        cursor.execute(consulta, (id_evento,))
+        resultado = cursor.fetchone()
+
+        #VARIABLES
+        
+        titulo = resultado[2]
+        descripcion = resultado[3]
+        id_categoria = resultado[4]
+        fecha_inicio = resultado[5].strftime("%Y-%m-%d %H:%M")
+        fecha_fin = resultado[6].strftime("%Y-%m-%d %H:%M")
+        
+        #OBTENER FECHA DEL TREEVIEW
+        item_id = lista.selection()[0]
+        valores = lista.item(item_id, "values")
+
+        direccion = valores[2]
+
+        lbl_titulo = Label(ventanaDetalles, text=("Titulo del evento: "+titulo), font = (fuente, 12))
+
+
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
+#--------------------Busqueda por palabras clave de eventos
 def busquedaEvento(lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas):
 
     lista.unbind("<<TreeviewSelect>>")
@@ -302,7 +360,7 @@ def mostrar_pagina_principal(vector_paginas):
     pagina_principal.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_principal)
 #-------------------Mostrar pagina buscar
-def mostrar_pagina_buscar(vector_paginas):
+def mostrar_pagina_buscar(app,vector_paginas):
 
     pagina_buscar = vector_paginas[1]
     pagina_buscar.place(x=200, width=800, height=500)
@@ -357,8 +415,6 @@ def mostrar_pagina_buscar(vector_paginas):
     lbl_fechas=Label(pagina_buscar,font=(fuente,10),background="gainsboro",text="Filtrar por fecha:")
     lbl_fechas.place(x=480, y=85,height=20)
 
-    #FALTA FILTRO PARA FECHAS
-
     dateEntry_fecha = DateEntry(pagina_buscar,date_pattern='yyyy-mm-dd')
     dateEntry_fecha.config(state="readonly")
 
@@ -383,6 +439,14 @@ def mostrar_pagina_buscar(vector_paginas):
     lista.column("Dirección", width=150, anchor="center")
     lista.column("Fecha", width=150, anchor="center")
 
+    def doble_click(event):
+
+        item_id = lista.selection()[0]
+        valores = lista.item(item_id, "values")
+        id_evento = valores[0]
+        ver_detalles_evento(app, fuente, id_evento, lista)
+
+    lista.bind("<Double-1>", doble_click)
     try:
         conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
@@ -423,6 +487,14 @@ def mostrar_pagina_notificaciones(vector_paginas):
     lbl1=Label(pagina_notificaciones,text="Notificaciones", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
 
+#--------------------Mostrar pagina carrito
+def mostrar_pagina_carrito(vector_paginas):
+    pagina_carrito = vector_paginas[3]
+    pagina_carrito.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_carrito)
+
+    lbl1=Label(pagina_carrito,text="Carrito de compras", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
 #--------------------Pantalla Menu Usuario
 def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     global fuente
@@ -445,8 +517,12 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     pagina_notificaciones=Frame(app_MenuUs, bg="gainsboro")
     pagina_notificaciones.place(x=200, width=800, height=500)
 
+    #Pagina carrito
+    pagina_carrito=Frame(app_MenuUs, bg="gainsboro")
+    pagina_carrito.place(x=200, width=800, height=500)
+
     #Completar vector paginas
-    vector_paginas=[panel2,pagina_buscar,pagina_notificaciones]
+    vector_paginas=[panel2,pagina_buscar,pagina_notificaciones, pagina_carrito]
 
     for i in range(len(vector_paginas)):
         if vector_paginas[i] != panel2:
@@ -455,16 +531,20 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     #BOTON VOLVER
     btn_volver = Button(app_MenuUs, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuUs,app))
     btn_volver.place(x=10,y=10)
+
     #COMPONENTES PARA EL PANEL 1
 
     btn_principal = Button(app_MenuUs, text="Menu Principal", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
     btn_principal.place(x=20, y=70, width=160, height=30)
     
-    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, vector_paginas))
+    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas))
     btn_buscar.place(x=20, y=100, width=160, height=30)
     
     btn_notificaciones = Button(app_MenuUs, text="Notificaciones", relief="flat", command=partial(mostrar_pagina_notificaciones, vector_paginas))
     btn_notificaciones.place(x=20, y=130, width=160, height=30)
+
+    btn_carrito = Button(app_MenuUs, text="Carrito", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
+    btn_carrito.place(x=20, y=160, width=160, height=30)
 
     #COMPONENTES PARA EL PANEL 2 (pagina principal) 
     
