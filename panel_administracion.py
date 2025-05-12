@@ -188,7 +188,7 @@ def verificar_Ubicaciones_Categorias_Evento():
     try:
         conexion = funciones_generales.iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
-        consulta = "SELECT 1 FROM Categoria LIMIT 1"
+        consulta = "SELECT 1 FROM Categoria LIMIT 1 "
         cursor.execute(consulta)
         resultado = cursor.fetchone()
         if resultado:
@@ -256,8 +256,8 @@ def mostrar_CategoriasUbicaciones(combo_cate, combo_ubi):
         conexion = funciones_generales.iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
 
-        consulta1 = "SELECT id_categoria, nombre FROM Categoria ORDER BY id_categoria ASC"
-        consulta2 = "SELECT id_ubicacion, direccion FROM Ubicacion ORDER BY id_ubicacion ASC"
+        consulta1 = "SELECT id_categoria, nombre FROM Categoria WHERE activo = 1 ORDER BY id_categoria ASC"
+        consulta2 = "SELECT id_ubicacion, direccion FROM Ubicacion WHERE activo = 1 ORDER BY id_ubicacion ASC"
         
         cursor.execute(consulta1)
         resultado = cursor.fetchall()
@@ -591,7 +591,7 @@ def mostrar_ubicacionesArbol(arbol_ubicaciones):
         if cantidad == 0:
             arbol_ubicaciones.insert("","end", values=("-","Ninguna ubicacion por ahora"))
         else:
-            cursor.execute("SELECT id_ubicacion, direccion FROM Ubicacion ORDER BY id_ubicacion ASC")
+            cursor.execute("SELECT id_ubicacion, direccion FROM Ubicacion WHERE activo = 1 ORDER BY id_ubicacion ASC ")
             resultado = cursor.fetchall()
 
             arbol_ubicaciones.delete(*arbol_ubicaciones.get_children())
@@ -662,7 +662,7 @@ def guardar_ubicacion(ent_id, ent_nomCalle, ent_altura, arbol_ubicaciones):
                     ent_altura.delete(0,END)
                     mostrar_ubicacionesArbol(arbol_ubicaciones)
                 else:
-                    consulta = "INSERT INTO Ubicacion (direccion) VALUES (%s)"
+                    consulta = "INSERT INTO Ubicacion (direccion,activo) VALUES (%s,1)"
                     cursor.execute(consulta, (direccion, ))
                     conexion.commit()
                     messagebox.showinfo(title="Éxito", message="¡Ubicacion Registrada Correctamente!")
@@ -691,7 +691,7 @@ def eliminar_ubicacion(ent_id, ent_nomCalle, ent_altura, arbol_ubicacion):
             conexion = funciones_generales.iniciarConexion(vectorConexion)
             cursor = conexion.cursor()
 
-            consulta = "DELETE FROM Ubicacion WHERE id_ubicacion = %s"
+            consulta = "UPDATE Ubicacion SET activo = 0 WHERE id_ubicacion = %s"
             cursor.execute(consulta,(id, ))
             conexion.commit()
             messagebox.showinfo(title="Éxito", message="¡Ubicacion Eliminada Correctamente!")
@@ -814,7 +814,7 @@ def guardar_categorias(ent_id, ent_nom, arbol_categorias):
                     ent_nom.delete(0,END)
                     mostrar_categoriasArbol(arbol_categorias)
                 else:
-                    consulta = "INSERT INTO Categoria (nombre) VALUES (%s)"
+                    consulta = "INSERT INTO Categoria (nombre, activo) VALUES (%s, 1)"
                     cursor.execute(consulta, (nombre, ))
                     conexion.commit()
                     messagebox.showinfo(title="Éxito", message="¡Categoria Registrada Correctamente!")
@@ -843,7 +843,7 @@ def eliminar_categoria(ent_id, ent_nom, arbol_categorias):
             conexion = funciones_generales.iniciarConexion(vectorConexion)
             cursor = conexion.cursor()
 
-            consulta = "DELETE FROM Categoria WHERE id_categoria = %s"
+            consulta = "UPDATE Categoria SET activo = 0 WHERE id_categoria = %s"
             cursor.execute(consulta,(id, ))
             conexion.commit()
             messagebox.showinfo(title="Éxito", message="¡Categoria Eliminada Correctamente!")
@@ -875,7 +875,7 @@ def mostrar_categoriasArbol(arbol_categorias):
         if cantidad == 0:
             arbol_categorias.insert("","end", values=("-","Ninguna categoría por ahora"))
         else:
-            cursor.execute("SELECT id_categoria, nombre FROM Categoria ORDER BY id_categoria ASC")
+            cursor.execute("SELECT id_categoria, nombre FROM Categoria WHERE activo = 1 ORDER BY id_categoria ASC")
             resultado = cursor.fetchall()
 
             arbol_categorias.delete(*arbol_categorias.get_children())
