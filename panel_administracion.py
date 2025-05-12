@@ -7,6 +7,7 @@ import panel_administrador_Notificaciones
 from panel_administrador_Entradas import mostrar_pagina_entradas
 import panel_administrador_Entradas
 from datetime import date
+from datetime import timedelta
 
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 COLOR_NORMAL = "#f0f0f0"
@@ -17,12 +18,89 @@ COLOR_ACTIVO = "gainsboro"
 
 
 #PAGINA MENU PRINCIPAL-----------------------------------
-def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
+def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
+    # Cambiar el estado del botón seleccionado
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
+    
+    # Mostrar la página
     panel2 = vector_paginas[0]
     panel2.place(x=200, width=800, height=500)
     funciones_generales.ocultar_pagina(vector_paginas, panel2)
+
+    # Crear un Treeview para mostrar los eventos
+    treeview = ttk.Treeview(panel2, columns=("titulo", "fecha_inicio", "fecha_fin", "entradas_totales", "entradas_vendidas", "entradas_disponibles"), show="headings")
+    
+    # Definir las columnas
+    treeview.heading("titulo", text="Título")
+    treeview.heading("fecha_inicio", text="Fecha Inicio")
+    treeview.heading("fecha_fin", text="Fecha Fin")
+    treeview.heading("entradas_totales", text="Entradas Totales")
+    treeview.heading("entradas_vendidas", text="Entradas Vendidas")
+    treeview.heading("entradas_disponibles", text="Entradas Disponibles")
+    
+    # Establecer el tamaño de las columnas
+    treeview.column("titulo", width=150)
+    treeview.column("fecha_inicio", width=120)
+    treeview.column("fecha_fin", width=120)
+    treeview.column("entradas_totales", width=120)
+    treeview.column("entradas_vendidas", width=120)
+    treeview.column("entradas_disponibles", width=120)
+    
+    # Ubicar el Treeview en el panel
+    treeview.place(x=20, y=50, width=760, height=400)
+    
+    # Llamar a la función que obtiene los datos y llena el Treeview
+    mostrar_eventos_con_estadisticas(treeview, id_organizador)
+
+def mostrar_eventos_con_estadisticas(arbol_eventos, id_organizador):
+    try:
+        # Establecer conexión a la base de datos
+        conexion = funciones_generales.iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        # Consulta para obtener los eventos activos para el organizador
+        consulta = """
+            SELECT E.id_evento, E.titulo, E.fecha_inicio, E.fecha_fin, 
+                   SUM(En.cupo_total) as entradas_totales,
+                   SUM(En.cupo_total - En.cupo_disponible) as entradas_vendidas,
+                   SUM(En.cupo_disponible) as entradas_disponibles
+            FROM Evento E
+            JOIN Entrada En ON E.id_evento = En.evento_id
+            WHERE E.id_organizador = %s AND E.estado = 'activo'
+            GROUP BY E.id_evento, E.titulo, E.fecha_inicio, E.fecha_fin
+        """
+        cursor.execute(consulta, (id_organizador,))
+        eventos = cursor.fetchall()
+
+        # Limpiar el árbol antes de agregar nuevos datos
+        for item in arbol_eventos.get_children():
+            arbol_eventos.delete(item)
+
+        # Insertar los datos de los eventos en el Treeview
+        for evento in eventos:
+            id_evento = evento[0]
+            titulo = evento[1]
+            fecha_inicio = evento[2]
+            fecha_fin = evento[3]
+            entradas_totales = evento[4]
+            entradas_vendidas = evento[5]
+            entradas_disponibles = evento[6]
+            
+            # Insertar la fila en el Treeview
+            arbol_eventos.insert("", "end", values=(
+                titulo, 
+                fecha_inicio.strftime("%Y-%m-%d %H:%M:%S"),
+                fecha_fin.strftime("%Y-%m-%d %H:%M:%S"),
+                entradas_totales,
+                entradas_vendidas,
+                entradas_disponibles
+            ))
+
+    except mysql.connector.Error as err:
+        messagebox.showerror("Error de Conexión", f"Hubo un error al conectar con la base de datos: {err}")
+    finally:
+        cursor.close()
+        conexion.close()
 #
 #
 #
@@ -100,7 +178,7 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     lbl_fe_ini.place(x=30, y=200)
     dateEntry_inicio = DateEntry(parte1,mindate=date.today(), date_pattern='yyyy-mm-dd')
     dateEntry_inicio.delete(0, "end")
-    dateEntry_inicio.config(state="readonly")
+    #dateEntry_inicio.config(state="readonly")
     dateEntry_inicio.place(x=30, y=220, width=150, height=20)
     
 
@@ -118,9 +196,9 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     #FECHA DE FINAL-----------------------
     lbl_fe_fin = Label(parte1, text="Fecha Final")
     lbl_fe_fin.place(x=210, y=200)
-    dateEntry_fin = DateEntry(parte1)
+    dateEntry_fin = DateEntry(parte1,mindate=date.today(),date_pattern='yyyy-mm-dd')
     dateEntry_fin.delete(0, "end")
-    dateEntry_fin.config(state="readonly",mindate=date.today(),date_pattern='yyyy-mm-dd')
+    #dateEntry_fin.config(state="readonly")
     dateEntry_fin.place(x=210, y=220, width=150, height=20)
     dateEntry_fin.delete(0, 'end')
         
@@ -328,35 +406,66 @@ def guardar_evento(ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dat
                 cursor.execute(consulta, (titulo, id_organizador, id_categoria, id_ubicacion, fechaInicio, fechaFinal, estado, ))
                 resultado = cursor.fetchone()[0]
 
-                consulta2 = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s"
-                cursor.execute(consulta2, (id_ubicacion, fechaInicio, fechaFinal, ))
-                resultado2 = cursor.fetchone()[0]
-
-                consulta_solapamiento = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s AND fecha_inicio < %s AND fecha_fin > %s"
-                cursor.execute(consulta_solapamiento, (id_ubicacion, fechaFinal, fechaInicio, ))
-                solapados = cursor.fetchone()[0]
-
                 if resultado > 0:
                     messagebox.showerror(title="Error", message="Este evento ya está registrado.")
-                elif(resultado2 > 0):
-                    messagebox.showerror(title="Error", message="Ya existe eventos con esta ubicacion y horario.")
-                elif solapados > 0:
-                    messagebox.showerror(title="Conflicto de horario", message="Ya hay un evento en esa ubicación que se superpone con las fechas ingresadas.")
                 else:
                     #MODIFICAR------------------
                     if len(ent_id.get()) > 0:
                         id = ent_id.get()
-                        consulta = "UPDATE Evento SET titulo=%s, descripcion=%s, id_categoria=%s, fecha_inicio=%s, fecha_fin=%s, estado=%s, id_ubicacion=%s WHERE id_evento = %s"
-                        valores = (titulo, descripcion, id_categoria, fechaInicio, fechaFinal, estado, id_ubicacion, id)
-                        cursor.execute(consulta, valores)
-                        conexion.commit()
-                        messagebox.showinfo(title="Éxito", message="¡Evento Actualizado Correctamente!")
+
+                        consulta2 = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s and id_evento != %s"
+                        cursor.execute(consulta2, (id_ubicacion, fechaInicio, fechaFinal, id, ))
+                        resultado2 = cursor.fetchone()[0]
+
+                        consulta_solapamiento = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s AND fecha_inicio < %s AND fecha_fin > %s and id_evento != %s"
+                        cursor.execute(consulta_solapamiento, (id_ubicacion, fechaFinal, fechaInicio, id))
+                        solapados = cursor.fetchone()[0]
+
+                        if(resultado2 > 0 or solapados > 0):
+                            messagebox.showerror(title="Error", message="¡Ups! Parece que ya hay eventos que transcurren en el mismo lugar, fechas y horarios")
+                        else:
+                            consulta = "UPDATE Evento SET titulo=%s, descripcion=%s, id_categoria=%s, fecha_inicio=%s, fecha_fin=%s, estado=%s, id_ubicacion=%s WHERE id_evento = %s"
+                            valores = (titulo, descripcion, id_categoria, fechaInicio, fechaFinal, estado, id_ubicacion, id)
+                            cursor.execute(consulta, valores)
+                            conexion.commit()
+                            messagebox.showinfo(title="Éxito", message="¡Evento Actualizado Correctamente!")
+                            #NOTIFICACION DE QUE SE HA CREADO EL EVENTO
+                            consulta_Notificacion = "INSERT INTO Notificacion (id_evento, descripcion_noti, fecha) VALUES (%s,%s,NOW())"
+                            descripcionNotificacion = "¡Ey! El evento " + titulo + " para el que tienes una entrada ha sufrido una modificacion, verifica los cambios realizados en el apartado de Busqueda de Eventos"
+                            cursor.execute(consulta_Notificacion, (id, descripcionNotificacion, ))
+                            conexion.commit()
+                            #NOTIFICACION RECORDATORIO DE ASISTENCIA AL EVENTO
+                            fecha_notificacion = fechaInicio_dt - timedelta(days=1)
+                            fecha_notificacion_str = fecha_notificacion.strftime("%Y-%m-%d %H:%M:%S")
+                            consulta_Recordatorio = "INSERT INTO Notificacion (id_evento, descripcion_noti, fecha) VALUES (%s,%s,%s)"
+                            descripcionRecordatorio = "¡Ey! El evento " + titulo + " para el que tienes una entrada ha sufrido una modificacion, verifica los cambios realizados en el apartado de Busqueda de Eventos"
+                            cursor.execute(consulta_Recordatorio, (id, descripcionRecordatorio,fecha_notificacion_str, ))
+                            conexion.commit()
                     #GUARDAR--------------------
                     else:
-                        consulta = "INSERT INTO Evento (id_organizador, titulo, descripcion, id_categoria, fecha_inicio, fecha_fin, estado, id_ubicacion) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-                        cursor.execute(consulta, (id_organizador, titulo, descripcion, id_categoria, fechaInicio, fechaFinal, estado, id_ubicacion))
-                        conexion.commit()
-                        messagebox.showinfo(title="Éxito", message="¡Evento Registrado Correctamente!")
+                        
+                        consulta2 = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s"
+                        cursor.execute(consulta2, (id_ubicacion, fechaInicio, fechaFinal, ))
+                        resultado2 = cursor.fetchone()[0]
+
+                        consulta_solapamiento = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s AND fecha_inicio < %s AND fecha_fin > %s"
+                        cursor.execute(consulta_solapamiento, (id_ubicacion, fechaFinal, fechaInicio, ))
+                        solapados = cursor.fetchone()[0]
+
+                        if(resultado2 > 0 or solapados > 0):
+                            messagebox.showerror(title="Error", message="¡Ups! Parece que ya hay eventos que transcurren en el mismo lugar, fechas y horarios")
+                        else:
+                            consulta = "INSERT INTO Evento (id_organizador, titulo, descripcion, id_categoria, fecha_inicio, fecha_fin, estado, id_ubicacion) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                            cursor.execute(consulta, (id_organizador, titulo, descripcion, id_categoria, fechaInicio, fechaFinal, estado, id_ubicacion))
+                            conexion.commit()
+                            messagebox.showinfo(title="Éxito", message="¡Evento Registrado Correctamente!")
+
+                            idReciente = cursor.lastrowid
+                            consulta_Notificacion = "INSERT INTO Notificacion (id_evento, descripcion_noti, fecha) VALUES (%s,%s,NOW())"
+                            descripcionNotificacion = "¡Ey! Se ha creado el evento " + titulo + ", de la categoria " + combo_cate.get().lower() + ". Puedes encontrarlo ya en el apartado Busqueda de Eventos"
+                            cursor.execute(consulta_Notificacion, (idReciente, descripcionNotificacion, ))
+                            conexion.commit()
+
                     #Limpiar todos los Cambos-----------------
                     ent_id.config(state="normal")
                     ent_id.delete(0, "end")
@@ -411,11 +520,15 @@ def eliminar_evento(ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, da
             conexion = funciones_generales.iniciarConexion(vectorConexion)
             cursor = conexion.cursor()
 
-            consulta = "DELETE FROM Evento WHERE id_evento = %s"
+            consulta = "UPDATE Evento SET estado = 'cancelado' WHERE id_evento = %s"
             cursor.execute(consulta,(id, ))
             conexion.commit()
-            messagebox.showinfo(title="Éxito", message="¡Evento Eliminado Correctamente!")
+            messagebox.showinfo(title="Éxito", message="¡Evento Cancelado Correctamente!")
 
+            consulta_Notificacion = "INSERT INTO Notificacion (id_evento, descripcion_noti, fecha) VALUES (%s,%s,NOW())"
+            descripcionNotificacion = "¡Ups! El evento " + ent_tit.get() + " ha sido cancelado. Lamentamos el inconveniente, recibiras un reembolso de la compra pronto"
+            cursor.execute(consulta_Notificacion, (id, descripcionNotificacion, ))
+            conexion.commit()
             #Limpiar todos los Cambos-----------------
             ent_id.config(state="normal")
             ent_id.delete(0, "end")
@@ -1001,15 +1114,16 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     botones.append(btn_notificaciones)
     btn_notificaciones.place(x=20, y=250, width=160, height=30)
     #SE ASIGNAS LAS FUNCIONES A LOS BOTONES YA CREADOS
-    btn_principal.config(command=partial(mostrar_pagina_menuPrincipal,vector_paginas, app_MenuOrg, botones, 0))
+    btn_principal.config(command=partial(mostrar_pagina_menuPrincipal,vector_paginas, app_MenuOrg, botones, 0, id_organizador))
     btn_cuenta.config(command=partial(mostrar_pagina_cuenta, vector_paginas, app_MenuOrg, botones, 1))
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
     btn_evento.config(command=partial(eleccion_paginaEvento,vector_paginas, app_MenuOrg, botones, 4, id_organizador))
     btn_entradas.config(command=partial(mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5, id_organizador, fuente))
-    btn_notificaciones.config(command=partial(panel_administrador_Notificaciones.mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6, fuente))
+    btn_notificaciones.config(command=partial(panel_administrador_Notificaciones.mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6, fuente, id_organizador))
     btn_principal.config(bg="gainsboro")
 
+    mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, 0, id_organizador)
     funciones_generales.actualizar_estados_eventos(vectorConexion)
 
 
