@@ -4,8 +4,10 @@ import funciones_generales
 from tkcalendar import DateEntry
 from datetime import datetime
 import panel_administrador_Notificaciones
+from panel_administrador_Entradas import mostrar_pagina_entradas
 import panel_administrador_Entradas
 from datetime import date
+
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 COLOR_NORMAL = "#f0f0f0"
 COLOR_ACTIVO = "gainsboro"
@@ -34,9 +36,6 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#
-#
-#
 #PAGINA EVENTO-------------------------------------------
 def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
     if(verificar_Ubicaciones_Categorias_Evento() == False):
@@ -868,9 +867,8 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
     btn_evento.config(command=partial(eleccion_paginaEvento,vector_paginas, app_MenuOrg, botones, 4, id_organizador))
-    btn_entradas.config(command=partial(panel_administrador_Entradas.mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5, fuente))
+    btn_entradas.config(command=partial(mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5, id_organizador, fuente))
     btn_notificaciones.config(command=partial(panel_administrador_Notificaciones.mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6, fuente))
-
     btn_principal.config(bg="gainsboro")
 
 
