@@ -178,7 +178,7 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     lbl_fe_ini.place(x=30, y=200)
     dateEntry_inicio = DateEntry(parte1,mindate=date.today(), date_pattern='yyyy-mm-dd')
     dateEntry_inicio.delete(0, "end")
-    dateEntry_inicio.config(state="readonly")
+    #dateEntry_inicio.config(state="readonly")
     dateEntry_inicio.place(x=30, y=220, width=150, height=20)
     
 
@@ -198,7 +198,7 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     lbl_fe_fin.place(x=210, y=200)
     dateEntry_fin = DateEntry(parte1,mindate=date.today(),date_pattern='yyyy-mm-dd')
     dateEntry_fin.delete(0, "end")
-    dateEntry_fin.config(state="readonly")
+    #dateEntry_fin.config(state="readonly")
     dateEntry_fin.place(x=210, y=220, width=150, height=20)
     dateEntry_fin.delete(0, 'end')
         
