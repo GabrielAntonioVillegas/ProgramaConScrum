@@ -9,7 +9,8 @@ import panel_administracion
 from tkcalendar import DateEntry
 from datetime import datetime
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
-
+asiento_seleccionado = None
+boton_seleccionado = None
 #FUNCIONES=============================================================================
 
 #====================================[PANTALLAS]
@@ -110,7 +111,7 @@ def cargar_opciones_combobox(campo, tabla):
     try:
         conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
-        consulta = (f"SELECT {campo} FROM {tabla}")
+        consulta = (f"SELECT {campo} FROM {tabla} WHERE activo = 1")
         cursor.execute(consulta)
         resultados=cursor.fetchall()
         if resultados:
@@ -140,7 +141,7 @@ def agregar_favorito(id_categoria, id_usuario):
         if resultado:
             messagebox.showerror(title="Error", message="Ya tienes esta categoria en favoritos")
         else:
-            consulta = ("INSERT INTO PreferenciaCategoria (UsuarioID, id_categoria) VALUES (%s,%s)")
+            consulta = ("INSERT INTO PreferenciaCategoria (UsuarioID, id_categoria, activo) VALUES (%s,%s,1)")
             cursor.execute(consulta, (id_usuario, id_categoria,))
             conexion.commit()
             messagebox.showinfo(title="Éxito", message="La categoria fue guardada como favorita con exito")
@@ -154,6 +155,66 @@ def agregar_favorito(id_categoria, id_usuario):
         try:
             conexion.close()
             cursor.close()
+        except:
+            pass
+
+#--------------------Seleccion de asiento
+def seleccionar_asiento(id_asiento, boton):
+    global asiento_seleccionado, boton_seleccionado
+
+    # Restaurar el color del botón anterior si lo había
+    if boton_seleccionado:
+        boton_seleccionado.configure(bg="green")
+
+    # Marcar nuevo asiento
+    asiento_seleccionado = id_asiento
+    boton_seleccionado = boton
+    boton.configure(bg="yellow")
+
+    print(f"Asiento seleccionado: {id_asiento}")
+
+def cargar_grilla_asientos(frame, entrada_id):
+    global asiento_seleccionado, boton_seleccionado
+
+    for widget in frame.winfo_children():
+        widget.destroy()
+
+    try:
+        conexion = iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        # Obtener asientos por Entrada_id
+        consulta = "SELECT id_asiento, fila, columna, disponible FROM Asiento WHERE Entrada_id = %s"
+        cursor.execute(consulta, (entrada_id,))
+        asientos = cursor.fetchall()
+
+        if not asientos:
+            messagebox.showinfo("Info", "No hay asientos para esta entrada")
+            return
+
+        # Obtener límites para crear la grilla
+        max_fila = max(a[1] for a in asientos)
+        max_columna = max(a[2] for a in asientos)
+
+        matriz = [[None for _ in range(max_columna)] for _ in range(max_fila)]
+
+        for asiento in asientos:
+            id_asiento, fila, columna, disponible = asiento
+            color = "green" if disponible else "red"
+            state = "normal" if disponible else "disabled"
+
+            btn = Button(frame, text=f"{fila},{columna}", bg=color, width=5, state=state)
+            btn.config(command=lambda a=id_asiento, b=btn: seleccionar_asiento(a, b))
+            btn.grid(row=fila - 1, column=columna - 1, padx=2, pady=2)
+            matriz[fila - 1][columna - 1] = btn
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror("Error", "Error al cargar los asientos")
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
         except:
             pass
 
@@ -181,7 +242,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
     ventanaDetalles = tk.Toplevel(app)
     ventanaDetalles.title("Detalles del evento")
     ventanaDetalles.protocol("WM_DELETE_WINDOW", cerrar_ventana_detalle) #que hacer cuando se cierra la ventana manualmente
-    centrarPantalla(500,500,ventanaDetalles)
+    centrarPantalla(1000,1000,ventanaDetalles)
     ventanaDetalles.resizable(False,False)
 
     try:
@@ -200,7 +261,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
         id_categoria = resultado[4]
         fecha_inicio = resultado[5].strftime("%d-%m-%Y %H:%M")
         fecha_fin = resultado[6].strftime("%d-%m-%Y %H:%M")
-        
+        estado = resultado[7]
         #OBTENER FECHA DEL TREEVIEW
         item_id = lista.selection()[0]
         valores = lista.item(item_id, "values")
@@ -240,10 +301,100 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
         lbl_direccion = Label(ventanaDetalles, text="Direccion: "+direccion, font=(fuente,10))
         lbl_direccion.place(relx=0.5, y=190, anchor="center")
 
-        #FALTA AGREGAR BOTON AGREGAR CATEGORIA A FAVORITOS Y AGREGAR ENTRADAS AL CARRITO
 
         btn_favorito = Button(ventanaDetalles, text="Agregar categoria a favoritos", wraplength=120, font=(fuente,10), command=partial(agregar_favorito, id_categoria, id_usuario))
         btn_favorito.place(relx=0.5, y=240, anchor="center")
+
+        def cargar_entradas(id_evento):
+            try:
+                conexion = iniciarConexion(vectorConexion)
+                cursor = conexion.cursor()
+                consulta = "SELECT tipo FROM Entrada WHERE Evento_id = %s"
+                cursor.execute(consulta, (id_evento,))
+                resultados=cursor.fetchall()
+                vector_opciones=[]
+                if resultados:
+                    for posicion in resultados:
+                        vector_opciones.append(str(posicion[0]))
+                return (vector_opciones)
+                    
+
+            except Exception as e:
+                print(e)
+                messagebox.showerror("Error", "No se pudieron cargar los tipos de entrada")
+
+            finally:
+                try:
+                    cursor.close()
+                    conexion.close()
+                except:
+                    pass
+        
+        lbl_estado = Label(ventanaDetalles, text="Estado: "+estado, font=(fuente,10))
+        lbl_estado.place(relx=0.5, y=290, anchor="center")
+        if estado=="activo":
+            lbl_entradas = Label(ventanaDetalles, text="Entradas: ", font = (fuente, 10))
+            lbl_entradas.place(relx=0.5, y=330, anchor="center")
+            cmb_entradas = Combobox(ventanaDetalles,font=(fuente,12), state="readonly")
+            cmb_entradas.place(relx=0.5, y=360, anchor="center")
+            vector_entradas = cargar_entradas(id_evento)
+            if vector_entradas:
+                cmb_entradas["values"]=vector_entradas
+                cmb_entradas.current(0)
+                frame_grilla = Frame(ventanaDetalles)
+                frame_grilla.place(relx=0.5, y=550,anchor="center")
+                def cargar_asientos_cb():
+                    tipo_entrada = cmb_entradas.get()
+                    if not tipo_entrada:
+                        messagebox.showerror("Error", "Seleccioná un tipo de entrada")
+                        return
+
+                    try:
+                        conexion = iniciarConexion(vectorConexion)
+                        cursor = conexion.cursor()
+                        consulta = "SELECT id_entrada, asiento FROM Entrada WHERE tipo = %s AND Evento_id = %s"
+                        cursor.execute(consulta, (tipo_entrada, id_evento,))
+                        resultado = cursor.fetchone()
+
+                        for widget in frame_grilla.winfo_children():
+                            widget.destroy()
+
+                        if resultado:
+                            id_entrada, tiene_asientos = resultado
+                            if tiene_asientos:
+                                cargar_grilla_asientos(frame_grilla, id_entrada)
+                            else:
+                                frame_grilla.place_forget()
+                                #ACA VA SI NO TIENE ASIENTOS
+                                consulta=("SELECT cupo_disponible FROM Entrada WHERE id_entrada = %s")
+                                cursor.execute(consulta, (id_entrada,))
+                                cupo = cursor.fetchone()
+                                lbl_cupo=Label(ventanaDetalles, text=("Disponibles: "+str(cupo[0])))
+                                lbl_cupo.place(relx=0.5, y=550, anchor="center")
+                        else:
+                            messagebox.showerror("Error", "Entrada no encontrada")
+
+                    except Exception as e:
+                        print(e)
+                        messagebox.showerror("Error", "Error al buscar la entrada")
+                    finally:
+                        try:
+                            cursor.close()
+                            conexion.close()
+                        except:
+                            pass
+
+                btn_cargar = Button(ventanaDetalles, text="Cargar entradas", command=cargar_asientos_cb)
+                btn_cargar.place(relx=0.5, y=400, anchor="center")
+                
+            else:
+                cmb_entradas.place_forget()
+                lbl_entradas.place_forget()
+                lbl_entradas.configure(text="No hay entradas disponibles para este evento")
+                lbl_entradas.place(relx=0.5, y=320, anchor="center")
+
+        
+        
 
     except Exception as e:
         print(e)
@@ -280,90 +431,90 @@ def busquedaEvento(app,lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateE
         consulta_busqueda_vacia_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                 'FROM Evento '
                                                 'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                                'WHERE estado="activo"')
+                                                'WHERE (estado="activo" OR estado="cancelado")')
         
         consulta_busqueda_vacia_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                   'FROM Evento '
                                                   'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                                   'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                                  'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s)')
+                                                  'WHERE (estado="activo" OR estado="cancelado") AND LOWER(Categoria.nombre) = LOWER(%s)')
         
         consulta_busqueda_vacia_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                 'FROM Evento '
                                                 'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                                'WHERE estado="activo" AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+                                                'WHERE (estado="activo" OR estado="cancelado") AND LOWER(Ubicacion.direccion) = LOWER(%s)')
         
         consulta_busqueda_vacia_solo_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                             'FROM Evento '
                                             'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                            'WHERE estado="activo" AND DATE(fecha_inicio) = %s')
+                                            'WHERE (estado="activo" OR estado="cancelado") AND DATE(fecha_inicio) = %s')
         
         consulta_busqueda_vacia_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                         'FROM Evento '
                                                         'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                                         'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                                        'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+                                                        'WHERE (estado="activo" OR estado="cancelado") AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
         
         consulta_busqueda_vacia_categoria_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                     'FROM Evento '
                                                     'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                                     'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                                    'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                                    'WHERE (estado="activo" OR estado="cancelado") AND LOWER(Categoria.nombre) = LOWER(%s) AND DATE(fecha_inicio) = %s')
         
         consulta_busqueda_vacia_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                     'FROM Evento '
                                                     'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                                    'WHERE estado="activo" AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                                    'WHERE (estado="activo" OR estado="cancelado") AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
         
         consulta_busqueda_vacia_categoria_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                             'FROM Evento '
                                                             'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                                             'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                                            'WHERE estado="activo" AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                                            'WHERE (estado="activo" OR estado="cancelado") AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
         
         consulta_sin_filtros = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                 'FROM Evento '
                                 'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s)')
+                                'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s)')
         
         consulta_solo_categoria = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                     'FROM Evento '
                                     'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                     'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s)')
+                                    'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s)')
         
         consulta_solo_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                     'FROM Evento '
                                     'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+                                    'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
 
         consulta_solo_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                 'FROM Evento '
                                 'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND DATE(fecha_inicio) = %s')
         
         consulta_categoria_y_ubicacion = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                         'FROM Evento '
                                         'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                         'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                        'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
+                                        'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s)')
         
         consulta_categoria_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                     'FROM Evento '
                                     'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                     'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                    'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND DATE(fecha_inicio) = %s')
         
         consulta_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                     'FROM Evento '
                                     'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
-                                    'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                    'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
 
         consulta_categoria_ubicacion_y_fecha = ('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio '
                                                 'FROM Evento '
                                                 'INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion '
                                                 'INNER JOIN Categoria ON Categoria.id_categoria = Evento.id_categoria '
-                                                'WHERE estado="activo" AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
+                                                'WHERE (estado="activo" OR estado="cancelado") AND LOWER(titulo) LIKE LOWER(%s) AND LOWER(Categoria.nombre) = LOWER(%s) AND LOWER(Ubicacion.direccion) = LOWER(%s) AND DATE(fecha_inicio) = %s')
 
         if (entrada == "" and categoria_seleccionada == "Todas" and ubicacion_seleccionada == "Todas" and estado_boton_fechas.get() == False):
             cursor.execute(consulta_busqueda_vacia_sin_filtros)
@@ -426,12 +577,101 @@ def busquedaEvento(app,lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateE
             conexion.close()
         except:
             pass
+#--------------------Eliminar categoria de favoritos
+def eliminar_favoritos(lista, id_usuario, app,vector_paginas):
+    selected_item = lista.focus()
+    values = lista.item(selected_item, 'values') 
+    if not values:
+        messagebox.showerror(title="Error", message="No seleccionaste ninguna categoria")
+        return "break"
+    else:
 
-#--------------------Mostrar pagina principal
+        try:
+            conexion=iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
+            consulta = ("SELECT id_categoria FROM Categoria WHERE nombre = %s")
+            cursor.execute(consulta, (values[0],))
+            resultado=cursor.fetchone()[0]
+
+            consulta=("DELETE FROM PreferenciaCategoria WHERE id_categoria = %s AND UsuarioID = %s")
+            cursor.execute(consulta, (resultado,id_usuario,))
+            conexion.commit()
+            messagebox.showinfo(title="Exito", message="Eliminaste esta categoria de favoritos con exito")
+            mostrar_pagina_favoritos(app,vector_paginas,id_usuario)
+        
+        except Exception as e:
+            print(e)
+            messagebox.showerror(title="Error", message="Ups! Parece que ocurrio un error")
+        
+        finally:
+            try:
+                conexion.close()
+                cursor.close()
+            except:
+                pass
+
+
+#--------------------Mostrar pagina principal (notificaciones)
+def obtener_notificaciones():
+    try:
+        # Establecer conexión con la base de datos
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        # Consulta SQL para obtener notificaciones
+        consulta = """
+        SELECT n.fecha, n.descripcion_noti
+        FROM Notificacion n
+        INNER JOIN Evento e ON n.id_evento = e.id_evento
+        INNER JOIN PreferenciaCategoria pc ON e.id_categoria = pc.id_categoria
+        WHERE n.fecha <= NOW() AND e.id_categoria = pc.id_categoria;
+        """
+        cursor.execute(consulta)
+        resultados = cursor.fetchall()
+
+        return resultados
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror("Error", f"Error al obtener las notificaciones")
+        return []
+    finally:
+        try:
+            # Cerrar la conexión
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+
 def mostrar_pagina_principal(vector_paginas):
     pagina_principal = vector_paginas[0]
     pagina_principal.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_principal)
+
+    # Crear un Treeview
+    treeview_frame = tk.Frame(pagina_principal)
+    treeview_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    tree = ttk.Treeview(treeview_frame, columns=("Fecha", "Descripción"), show="headings")
+    tree.heading("Fecha", text="Fecha")
+    tree.heading("Descripción", text="Descripción")
+    tree.column("Fecha",width=120)
+    tree.column("Descripción", width=500)
+    tree.pack(fill=tk.BOTH, expand=True)
+
+    # Obtener las notificaciones de la base de datos
+    notificaciones = obtener_notificaciones()
+
+    if notificaciones:
+        # Insertar los resultados en el Treeview
+        for noti in notificaciones:
+            # Aquí no es necesario usar strptime porque noti[0] ya es un objeto datetime
+            fecha_formateada = noti[0].strftime('%d-%m-%Y %H:%M:%S')
+            tree.insert("", "end", values=(fecha_formateada, noti[1]))
+    else:
+        messagebox.showinfo("Sin notificaciones", "No hay notificaciones para mostrar.")
+
+    
 #-------------------Mostrar pagina buscar
 def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
 
@@ -534,7 +774,7 @@ def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
     try:
         conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
-        cursor.execute('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE estado="activo"')
+        cursor.execute('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE (estado="activo" OR estado="cancelado")')
         resultados=cursor.fetchall()
         if resultados:
             for idevento, titulo, ubicacion, fecha_inicio in resultados:
@@ -563,16 +803,63 @@ def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
     
     
 #--------------------Mostrar pagina notificaciones
-def mostrar_pagina_favoritos(vector_paginas):
+def mostrar_pagina_favoritos(app,vector_paginas,id_usuario):
     pagina_favoritos = vector_paginas[2]
     pagina_favoritos.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_favoritos)
 
     lbl1=Label(pagina_favoritos,text="Favoritos", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    def limpiar_seleccion_lista(event):
+        widget_actual = event.widget
+        if not str(widget_actual).startswith(str(lista)):
+            lista.selection_remove(lista.selection())
+    
+    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
+                                                                #Cuando se clickee cualquier parte que no sea
+                                                                #un evento del treeview, se desenfoque
+                                                                #el seleccionado anteriormente
 
     lista = Treeview(pagina_favoritos,columns=("Categorias:"), show="headings")
-    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=300)
+    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=200)
+    lista.heading("Categorias:", text="Categorias:")
+    lista.column("Categorias:", width=400, anchor="center")
+
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta=('SELECT id_categoria FROM PreferenciaCategoria WHERE UsuarioID = %s AND activo=1')
+        cursor.execute(consulta,(id_usuario,))
+        resultados=cursor.fetchall()
+        if resultados:
+            # Extraer solo los ids de cada tupla
+            ids = [fila[0] for fila in resultados]
+            placeholders = ", ".join(['%s'] * len(ids))
+            consulta = f'SELECT nombre FROM Categoria WHERE id_categoria IN ({placeholders})'
+            cursor.execute(consulta, ids)
+            resultados2 = cursor.fetchall()
+            for categoria in resultados2:
+                lista.insert("", "end", values=categoria)
+        else:
+            lista.insert("", "end", values=("No tenes favoritos"))
+            # Deshabilitar selección
+            def bloquear_click(event):
+                return "break"
+
+            lista.bind("<ButtonPress-1>", bloquear_click)
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+
+    btn_eliminar = Button(pagina_favoritos, text="Eliminar de favoritos", wraplength=100,command=partial(eliminar_favoritos, lista, id_usuario, app, vector_paginas))
+    btn_eliminar.place(relx=0.5, y=400, anchor = "center")
 
 #--------------------Mostrar pagina carrito
 def mostrar_pagina_carrito(vector_paginas):
@@ -648,7 +935,7 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas, id_usuario))
     btn_buscar.place(x=20, y=100, width=160, height=30)
     
-    btn_favoritos = Button(app_MenuUs, text="Favoritos", relief="flat", command=partial(mostrar_pagina_favoritos, vector_paginas))
+    btn_favoritos = Button(app_MenuUs, text="Favoritos", relief="flat", command=partial(mostrar_pagina_favoritos, app, vector_paginas, id_usuario))
     btn_favoritos.place(x=20, y=130, width=160, height=30)
 
     btn_carrito = Button(app_MenuUs, text="Carrito", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))

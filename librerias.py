@@ -7,7 +7,7 @@ from   tkinter   import PhotoImage
 from   tkinter   import font
 import random
 import time
-import mysql.connector 
+import mysql.connector
 from mysql.connector import Error
 #VARIABLE PARA LLAMAR LIBRERIAS======================================================
 __all__ = [
