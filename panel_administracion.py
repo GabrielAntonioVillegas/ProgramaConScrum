@@ -878,7 +878,7 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
 
     btn_principal.config(bg="gainsboro")
 
-    app_MenuOrg.mainloop()
+
 
 
 

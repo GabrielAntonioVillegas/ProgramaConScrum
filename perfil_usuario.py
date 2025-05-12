@@ -29,6 +29,7 @@ def cerrar_abrirVentanas(app1,app2):
     #app2.withdraw()  #Ocultar Ventana
     #Para poder usar deiconify, la ventana a reaparecer debe primero ser ocultada con .withdraw()
     app2.deiconify() #Reaparecer Ventana
+    app2.unbind_all("<Button-1>")
 #--------------------Pantalla Iniciar Sesion
 def creacionPantalla_IniciarSesion(app,fuente):
     app_Inse= Toplevel(app)
@@ -126,8 +127,37 @@ def cargar_opciones_combobox(campo, tabla):
             conexion.close()
         except:
             pass
+#--------------------Agregar categoria a favoritos
+def agregar_favorito(id_categoria, id_usuario):
+    try:
+        conexion = iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta = ("SELECT * FROM PreferenciaCategoria WHERE UsuarioID = %s AND id_categoria = %s")
+        cursor.execute(consulta, (id_usuario, id_categoria,))
+
+        resultado = cursor.fetchone()
+        if resultado:
+            messagebox.showerror(title="Error", message="Ya tienes esta categoria en favoritos")
+        else:
+            consulta = ("INSERT INTO PreferenciaCategoria (UsuarioID, id_categoria) VALUES (%s,%s)")
+            cursor.execute(consulta, (id_usuario, id_categoria,))
+            conexion.commit()
+            messagebox.showinfo(title="Éxito", message="La categoria fue guardada como favorita con exito")
+        
+        print(cursor.statement)
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
+
 #--------------------Crear Ventana Detalles Evento
-def ver_detalles_evento(app, fuente, id_evento,lista):
+def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
 
     lista.unbind("<Double-1>") #Deshabilitar abrir detalles con dobleclick
     
@@ -143,7 +173,7 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
             item_id = lista.selection()[0]
             valores = lista.item(item_id, "values")
             id_evento = valores[0]
-            ver_detalles_evento(app, fuente, id_evento, lista)
+            ver_detalles_evento(app, fuente, id_evento, lista, id_usuario)
         
         lista.bind("<Double-1>", doble_click) #volver a habilitar abrir detalles
     
@@ -211,6 +241,8 @@ def ver_detalles_evento(app, fuente, id_evento,lista):
 
         #FALTA AGREGAR BOTON AGREGAR CATEGORIA A FAVORITOS Y AGREGAR ENTRADAS AL CARRITO
 
+        btn_favorito = Button(ventanaDetalles, text="Agregar categoria a favoritos", wraplength=120, font=(fuente,10), command=partial(agregar_favorito, id_categoria, id_usuario))
+        btn_favorito.place(relx=0.5, y=240, anchor="center")
 
     except Exception as e:
         print(e)
@@ -400,7 +432,7 @@ def mostrar_pagina_principal(vector_paginas):
     pagina_principal.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_principal)
 #-------------------Mostrar pagina buscar
-def mostrar_pagina_buscar(app,vector_paginas):
+def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
 
     pagina_buscar = vector_paginas[1]
     pagina_buscar.place(x=200, width=800, height=500)
@@ -418,7 +450,6 @@ def mostrar_pagina_buscar(app,vector_paginas):
                                                                 #Cuando se clickee cualquier parte que no sea
                                                                 #un evento del treeview, se desenfoque
                                                                 #el seleccionado anteriormente
-
     #funciones locales de placeholder (texto de sugerencia del entry)
     def clickeado(event):
         if ent_buscar.get() == 'Busca un evento por su título...':
@@ -496,7 +527,7 @@ def mostrar_pagina_buscar(app,vector_paginas):
         item_id = lista.selection()[0]
         valores = lista.item(item_id, "values")
         id_evento = valores[0]
-        ver_detalles_evento(app, fuente, id_evento, lista)
+        ver_detalles_evento(app, fuente, id_evento, lista, id_usuario)
 
     lista.bind("<Double-1>", doble_click)
     try:
@@ -531,13 +562,16 @@ def mostrar_pagina_buscar(app,vector_paginas):
     
     
 #--------------------Mostrar pagina notificaciones
-def mostrar_pagina_notificaciones(vector_paginas):
-    pagina_notificaciones = vector_paginas[2]
-    pagina_notificaciones.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_notificaciones)
+def mostrar_pagina_favoritos(vector_paginas):
+    pagina_favoritos = vector_paginas[2]
+    pagina_favoritos.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_favoritos)
 
-    lbl1=Label(pagina_notificaciones,text="Notificaciones", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1=Label(pagina_favoritos,text="Favoritos", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    lista = Treeview(pagina_favoritos,columns=("Categorias:"), show="headings")
+    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=300)
 
 #--------------------Mostrar pagina carrito
 def mostrar_pagina_carrito(vector_paginas):
@@ -549,6 +583,27 @@ def mostrar_pagina_carrito(vector_paginas):
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
 #--------------------Pantalla Menu Usuario
 def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
+
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor=conexion.cursor()
+        consulta=("SELECT UsuarioID FROM Usuarios WHERE NombreUsuario = %s")
+        cursor.execute(consulta, (nombreUsuario,))
+        resultado = cursor.fetchone()
+
+        id_usuario=resultado[0]
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
+
     global fuente
     fuente = _fuente
     app_MenuUs = Toplevel(app)
@@ -565,16 +620,16 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     pagina_buscar = Frame(app_MenuUs, bg="gainsboro")
     pagina_buscar.place(x=200, width=800, height=500)
 
-    #Pagina notificaciones
-    pagina_notificaciones=Frame(app_MenuUs, bg="gainsboro")
-    pagina_notificaciones.place(x=200, width=800, height=500)
+    #Pagina favoritos
+    pagina_favoritos=Frame(app_MenuUs, bg="gainsboro")
+    pagina_favoritos.place(x=200, width=800, height=500)
 
     #Pagina carrito
     pagina_carrito=Frame(app_MenuUs, bg="gainsboro")
     pagina_carrito.place(x=200, width=800, height=500)
 
     #Completar vector paginas
-    vector_paginas=[panel2,pagina_buscar,pagina_notificaciones, pagina_carrito]
+    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito]
 
     for i in range(len(vector_paginas)):
         if vector_paginas[i] != panel2:
@@ -589,11 +644,11 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     btn_principal = Button(app_MenuUs, text="Menu Principal", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
     btn_principal.place(x=20, y=70, width=160, height=30)
     
-    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas))
+    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas, id_usuario))
     btn_buscar.place(x=20, y=100, width=160, height=30)
     
-    btn_notificaciones = Button(app_MenuUs, text="Notificaciones", relief="flat", command=partial(mostrar_pagina_notificaciones, vector_paginas))
-    btn_notificaciones.place(x=20, y=130, width=160, height=30)
+    btn_favoritos = Button(app_MenuUs, text="Favoritos", relief="flat", command=partial(mostrar_pagina_favoritos, vector_paginas))
+    btn_favoritos.place(x=20, y=130, width=160, height=30)
 
     btn_carrito = Button(app_MenuUs, text="Carrito", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
     btn_carrito.place(x=20, y=160, width=160, height=30)
@@ -683,6 +738,7 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
         contrasena = ent_contra.get()
         try:
             conexion = iniciarConexion(vectorConexion)
+            print("se abrio una conexion")
             cursor = conexion.cursor()
             #CONSULTA PARA VERIFICAR QUE SEA UN ORGANIZADOR O NO-------------------------------------
             consulta1 = "SELECT * FROM Organizador WHERE nombreUsuario = %s"
@@ -736,8 +792,9 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
             try:      
                 cursor.close()
                 conexion.close()
-            except:
-                pass
+                print("se cerro la conexion")
+            except Exception as e:
+                print("Error al cerrar la conexión:", e)
     else:
         messagebox.showerror(title="Valores Invalidos", message="Por favor llene los campos")
         ent_usu.delete(0,END)
