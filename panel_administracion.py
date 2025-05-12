@@ -3,6 +3,9 @@ import librerias as lib
 import funciones_generales
 from tkcalendar import DateEntry
 from datetime import datetime
+import panel_administrador_Notificaciones
+import panel_administrador_Entradas
+from datetime import date
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 COLOR_NORMAL = "#f0f0f0"
 COLOR_ACTIVO = "gainsboro"
@@ -10,31 +13,14 @@ COLOR_ACTIVO = "gainsboro"
 
 #FUNCIONES==============================================================================================
 
-#OCULTAR PAGINA------------------------------------------
-def ocultar_pagina(vector_paginas, paginaMostrar):
-    for pagina in vector_paginas:
-        if pagina != paginaMostrar:
-            pagina.place_forget()
+
 #PAGINA MENU PRINCIPAL-----------------------------------
 def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
 
     panel2 = vector_paginas[0]
     panel2.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, panel2)
-#
-#
-#
-#PAGINA NOTIFICACIONES-----------------------------------
-def mostrar_pagina_notificaciones(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
-    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
-    pagina_notificaciones = vector_paginas[7]
-    pagina_notificaciones.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_notificaciones)
-
-    lbl1 = Label(pagina_notificaciones, text="Notificaciones", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    funciones_generales.ocultar_pagina(vector_paginas, panel2)
 #
 #
 #
@@ -44,22 +30,9 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     pagina_cuenta = vector_paginas[1]
     pagina_cuenta.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_cuenta)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_cuenta)
 
     lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#
-#
-#
-#PAGINA ENTRADAS-----------------------------------------
-def mostrar_pagina_entradas(vector_paginas,app_MenuOrg,botones,btn_seleccionado):
-    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
-    pagina_entradas = vector_paginas[1]
-    pagina_entradas.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_entradas)
-
-    lbl1 = Label(pagina_entradas, text="Entradas", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
 #
 #
@@ -74,7 +47,7 @@ def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 def mostrar_pagina_eventoNoPosible(app_MenuOrg, vector_paginas):
     pagina_evento = vector_paginas[5]
     pagina_evento.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_evento)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_evento)
 
     lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -89,7 +62,7 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     pagina_evento = vector_paginas[2]
     pagina_evento.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_evento)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_evento)
 
     lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -100,56 +73,79 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     lbl_titulo1 = Label(parte1, text="Crear / Modificar Evento", font=(fuente, 14, "bold"))
     lbl_titulo1.place(relx=0.5, anchor="center", y=30)
-
+    #ID-----------------------------------
     lbl_id = Label(parte1, text="Id")
     lbl_id.place(x=30, y=50)
     ent_id = Entry(parte1)
     ent_id.place(x=30, y=70, width=150, height=20)
     ent_id.config(state="readonly")
-
+    #TITULO-------------------------------
     lbl_tit = Label(parte1, text="Titulo")
     lbl_tit.place(x=30, y=100)
     ent_tit = Entry(parte1)
     ent_tit.place(x=30, y=120, width=150, height=20)
-
+    #CATEGORIA----------------------------
     lbl_cat = Label(parte1, text="Categoria")
     lbl_cat.place(x=30, y=150)
     combo_cate = ttk.Combobox(parte1)
     combo_cate.config(state="readonly")
     combo_cate.place(x=30, y=170, width=150, height=20)
-
+    #UBICACION----------------------------
     lbl_ubi = Label(parte1, text="Ubicacion")
     lbl_ubi.place(x=210, y=150)
     combo_ubi = ttk.Combobox(parte1)
     combo_ubi.config(state="readonly")
     combo_ubi.place(x=210, y=170, width=150, height=20)
-
+    #FECHA DE INICIO----------------------
     lbl_fe_ini = Label(parte1, text="Fecha Inicio")
     lbl_fe_ini.place(x=30, y=200)
-    dateEntry_inicio = DateEntry(parte1,date_pattern='yyyy-mm-dd')
+    dateEntry_inicio = DateEntry(parte1,mindate=date.today(), date_pattern='yyyy-mm-dd')
     dateEntry_inicio.config(state="readonly")
     dateEntry_inicio.place(x=30, y=220, width=150, height=20)
     dateEntry_inicio.delete(0, 'end')
 
+    lbl_hr_ini = Label(parte1, text="Hora")
+    lbl_hr_ini.place(x=30, y=245)
+    spin_hr_ini = ttk.Spinbox(parte1, from_=0, to=23, width=3, format="%02.0f")
+    spin_hr_ini.place(x=30, y=265, width=60)
+    spin_hr_ini.config(state="readonly")
+
+    lbl_min_ini = Label(parte1, text="Minutos")
+    lbl_min_ini.place(x=120, y=245)
+    spin_min_ini = ttk.Spinbox(parte1, from_=0, to=59, width=3, format="%02.0f")
+    spin_min_ini.place(x=120, y=265, width=60)
+    spin_min_ini.config(state="readonly")
+    #FECHA DE FINAL-----------------------
     lbl_fe_fin = Label(parte1, text="Fecha Final")
     lbl_fe_fin.place(x=210, y=200)
     dateEntry_fin = DateEntry(parte1)
-    dateEntry_fin.config(state="readonly",date_pattern='yyyy-mm-dd')
+    dateEntry_fin.config(state="readonly",mindate=date.today(),date_pattern='yyyy-mm-dd')
     dateEntry_fin.place(x=210, y=220, width=150, height=20)
     dateEntry_fin.delete(0, 'end')
+        
+    lbl_hr_fin = Label(parte1, text="Hora")
+    lbl_hr_fin.place(x=210, y=245)
+    spin_hr_fin = ttk.Spinbox(parte1, from_=0, to=23, width=3, format="%02.0f")
+    spin_hr_fin.place(x=210, y=265, width=60)
+    spin_hr_fin.config(state="readonly")
 
+    lbl_min_fin = Label(parte1, text="Minutos")
+    lbl_min_fin.place(x=300, y=245)
+    spin_min_fin = ttk.Spinbox(parte1, from_=0, to=59, width=3, format="%02.0f")
+    spin_min_fin.place(x=300, y=265, width=60)
+    spin_min_fin.config(state="readonly")
+    #ESTADO--------------------------------
     lista = ["activo","cancelado","finalizado"]
     lbl_estado = Label(parte1, text="Estado")
-    lbl_estado.place(x=30, y=250)
+    lbl_estado.place(x=30, y=290)
     combo_est = ttk.Combobox(parte1, values=lista)
     combo_est.config(state="readonly")
-    combo_est.place(x=30, y=270, width=150, height=20)
-
+    combo_est.place(x=30, y=310, width=150, height=20)
+    #DESCRIPCION---------------------------
     lbl_desc = Label(parte1, text="Descripcion")
-    lbl_desc.place(x=30, y=300)
+    lbl_desc.place(x=30, y=340)
     ent_desc = Entry(parte1)
-    ent_desc.place(x=30, y=320, width=330, height=40)
-
+    ent_desc.place(x=30, y=360, width=330, height=40)
     #Eventos Existentes 
     parte2 = Frame(pagina_evento)
     parte2.place(x=405, y=30, width=385, height=460)
@@ -171,16 +167,15 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     dictCategorias, dictUbicaciones = mostrar_CategoriasUbicaciones(combo_cate, combo_ubi)
 
     btn_guardar = Button(parte1, text="Guardar Cambios", command=partial(guardar_evento,ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc,id_organizador,  dictCategorias, dictUbicaciones,trv_evento))
-    btn_guardar.place(x=115, y=375, width=150, height=30)
+    btn_guardar.place(x=30, y=415, width=150, height=30)
 
     btn_eliminar = Button(parte1, text="Eliminar Evento")
-    btn_eliminar.place(x=115, y=415, width=150, height=30)
+    btn_eliminar.place(x=210, y=415, width=150, height=30)
     btn_eliminar.config(state="disable")
 
-    trv_evento.bind('<ButtonRelease-1>', 
-                         lambda event:tomar_datos_eventosArbol(event, ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, 
-                                                               combo_est, ent_desc, id_organizador,  dictCategorias, dictUbicaciones, 
-                                                               trv_evento, btn_eliminar))
+    trv_evento.bind('<ButtonRelease-1>', lambda event:
+                    tomar_datos_eventosArbol(event, ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, 
+                                            ent_desc, id_organizador,  dictCategorias, dictUbicaciones, trv_evento, btn_eliminar))
 #VERIFICAR QUE EXISTAN CATEGORIAS Y UBICACIONES----------   
 def verificar_Ubicaciones_Categorias_Evento():
     estado = False
@@ -394,7 +389,7 @@ def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg, botones, btn_selecci
     
     pagina_ubicaciones = vector_paginas[4]
     pagina_ubicaciones.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_ubicaciones)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_ubicaciones)
 
     lbl1 = Label(pagina_ubicaciones, text="Ubicaciones", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -605,7 +600,7 @@ def mostrar_pagina_categorias(vector_paginas, app_MenuOrg, botones, btn_seleccio
     
     pagina_categoria = vector_paginas[3]
     pagina_categoria.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_categoria)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_categoria)
 
     lbl1 = Label(pagina_categoria, text="Categorias", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -873,11 +868,10 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
     btn_evento.config(command=partial(eleccion_paginaEvento,vector_paginas, app_MenuOrg, botones, 4, id_organizador))
-    btn_entradas.config(command=partial(mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5))
-    btn_notificaciones.config(command=partial(mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6))
+    btn_entradas.config(command=partial(panel_administrador_Entradas.mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5, fuente))
+    btn_notificaciones.config(command=partial(panel_administrador_Notificaciones.mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6, fuente))
 
     btn_principal.config(bg="gainsboro")
-
 
 
 

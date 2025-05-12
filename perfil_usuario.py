@@ -124,6 +124,7 @@ def cargar_opciones_combobox(campo, tabla):
         return vector_opciones
     finally:
         try:
+            cursor.close()
             conexion.close()
         except:
             pass
