@@ -1,5 +1,12 @@
 from librerias import * 
 import librerias as lib
+
+#OCULTAR PAGINA------------------------------------------
+def ocultar_pagina(vector_paginas, paginaMostrar):
+    for pagina in vector_paginas:
+        if pagina != paginaMostrar:
+            pagina.place_forget()
+            
 #--------------------Centrar Pantalla
 def centrarPantalla(ancho,alto,app):
     ancho_pantalla = app.winfo_screenwidth()

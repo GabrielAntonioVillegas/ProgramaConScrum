@@ -3,6 +3,8 @@ import librerias as lib
 import funciones_generales
 from tkcalendar import DateEntry
 from datetime import datetime
+import panel_administrador_Notificaciones
+import panel_administrador_Entradas
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 COLOR_NORMAL = "#f0f0f0"
 COLOR_ACTIVO = "gainsboro"
@@ -10,31 +12,14 @@ COLOR_ACTIVO = "gainsboro"
 
 #FUNCIONES==============================================================================================
 
-#OCULTAR PAGINA------------------------------------------
-def ocultar_pagina(vector_paginas, paginaMostrar):
-    for pagina in vector_paginas:
-        if pagina != paginaMostrar:
-            pagina.place_forget()
+
 #PAGINA MENU PRINCIPAL-----------------------------------
 def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
     funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
 
     panel2 = vector_paginas[0]
     panel2.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, panel2)
-#
-#
-#
-#PAGINA NOTIFICACIONES-----------------------------------
-def mostrar_pagina_notificaciones(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
-    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
-    pagina_notificaciones = vector_paginas[7]
-    pagina_notificaciones.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_notificaciones)
-
-    lbl1 = Label(pagina_notificaciones, text="Notificaciones", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    funciones_generales.ocultar_pagina(vector_paginas, panel2)
 #
 #
 #
@@ -44,26 +29,10 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     pagina_cuenta = vector_paginas[1]
     pagina_cuenta.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_cuenta)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_cuenta)
 
     lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#
-#
-#
-#PAGINA ENTRADAS-----------------------------------------
-def mostrar_pagina_entradas(vector_paginas,app_MenuOrg,botones,btn_seleccionado):
-    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
-    pagina_entradas = vector_paginas[1]
-    pagina_entradas.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_entradas)
-
-    lbl1 = Label(pagina_entradas, text="Entradas", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#
-#
-#
 #PAGINA EVENTO-------------------------------------------
 def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
     if(verificar_Ubicaciones_Categorias_Evento() == False):
@@ -74,7 +43,7 @@ def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 def mostrar_pagina_eventoNoPosible(app_MenuOrg, vector_paginas):
     pagina_evento = vector_paginas[5]
     pagina_evento.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_evento)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_evento)
 
     lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -89,7 +58,7 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     pagina_evento = vector_paginas[2]
     pagina_evento.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_evento)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_evento)
 
     lbl1 = Label(pagina_evento, text="Eventos", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -394,7 +363,7 @@ def mostrar_pagina_ubicaciones(vector_paginas, app_MenuOrg, botones, btn_selecci
     
     pagina_ubicaciones = vector_paginas[4]
     pagina_ubicaciones.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_ubicaciones)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_ubicaciones)
 
     lbl1 = Label(pagina_ubicaciones, text="Ubicaciones", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -605,7 +574,7 @@ def mostrar_pagina_categorias(vector_paginas, app_MenuOrg, botones, btn_seleccio
     
     pagina_categoria = vector_paginas[3]
     pagina_categoria.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_categoria)
+    funciones_generales.ocultar_pagina(vector_paginas, pagina_categoria)
 
     lbl1 = Label(pagina_categoria, text="Categorias", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
@@ -873,8 +842,8 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
     btn_evento.config(command=partial(eleccion_paginaEvento,vector_paginas, app_MenuOrg, botones, 4, id_organizador))
-    btn_entradas.config(command=partial(mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5))
-    btn_notificaciones.config(command=partial(mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6))
+    btn_entradas.config(command=partial(panel_administrador_Entradas.mostrar_pagina_entradas,vector_paginas, app_MenuOrg, botones, 5, fuente))
+    btn_notificaciones.config(command=partial(panel_administrador_Notificaciones.mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6, fuente))
 
     btn_principal.config(bg="gainsboro")
 
