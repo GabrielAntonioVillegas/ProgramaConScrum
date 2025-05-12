@@ -99,9 +99,10 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     lbl_fe_ini = Label(parte1, text="Fecha Inicio")
     lbl_fe_ini.place(x=30, y=200)
     dateEntry_inicio = DateEntry(parte1,mindate=date.today(), date_pattern='yyyy-mm-dd')
+    dateEntry_inicio.delete(0, "end")
     dateEntry_inicio.config(state="readonly")
     dateEntry_inicio.place(x=30, y=220, width=150, height=20)
-    dateEntry_inicio.delete(0, 'end')
+    
 
     lbl_hr_ini = Label(parte1, text="Hora")
     lbl_hr_ini.place(x=30, y=245)
@@ -118,6 +119,7 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     lbl_fe_fin = Label(parte1, text="Fecha Final")
     lbl_fe_fin.place(x=210, y=200)
     dateEntry_fin = DateEntry(parte1)
+    dateEntry_fin.delete(0, "end")
     dateEntry_fin.config(state="readonly",mindate=date.today(),date_pattern='yyyy-mm-dd')
     dateEntry_fin.place(x=210, y=220, width=150, height=20)
     dateEntry_fin.delete(0, 'end')
@@ -165,10 +167,15 @@ def mostrar_pagina_evento(vector_paginas, app_MenuOrg, botones, btn_seleccionado
     mostrar_eventosArbol(trv_evento, id_organizador)
     dictCategorias, dictUbicaciones = mostrar_CategoriasUbicaciones(combo_cate, combo_ubi)
 
-    btn_guardar = Button(parte1, text="Guardar Cambios", command=partial(guardar_evento,ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc,id_organizador,  dictCategorias, dictUbicaciones,trv_evento))
+    btn_guardar = Button(parte1, text="Guardar Cambios", 
+                         command=partial(guardar_evento,ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, 
+                                         ent_desc,id_organizador,  dictCategorias, dictUbicaciones,trv_evento, spin_hr_ini, spin_min_ini, 
+                                         spin_hr_fin, spin_min_fin))
     btn_guardar.place(x=30, y=415, width=150, height=30)
 
-    btn_eliminar = Button(parte1, text="Eliminar Evento")
+    btn_eliminar = Button(parte1, text="Eliminar Evento",
+                          command=partial(eliminar_evento,ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, 
+                                          ent_desc,trv_evento, spin_hr_ini, spin_min_ini, spin_hr_fin, spin_min_fin, id_organizador))
     btn_eliminar.place(x=210, y=415, width=150, height=30)
     btn_eliminar.config(state="disable")
 
@@ -203,6 +210,7 @@ def verificar_Ubicaciones_Categorias_Evento():
 #MOSTRAR EVENTOS ARBOL-----------------------------------
 def mostrar_eventosArbol(arbol_eventos, id_organizador):
     try:
+        funciones_generales.actualizar_estados_eventos(vectorConexion)
         conexion = funciones_generales.iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
 
@@ -212,7 +220,7 @@ def mostrar_eventosArbol(arbol_eventos, id_organizador):
         if cantidad ==0:
             arbol_eventos.insert("","end", values=("-","-","No tienes ningun Evento por ahora"))
         else:
-            consulta= "SELECT Evento.id_evento, Evento.titulo, Ubicacion.direccion, Evento.fecha_inicio, Evento.fecha_fin FROM Evento JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE id_organizador = %s"
+            consulta= "SELECT Evento.id_evento, Evento.titulo, Ubicacion.direccion, Evento.fecha_inicio, Evento.fecha_fin FROM Evento JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE id_organizador = %s AND estado = 'activo';"
             cursor.execute(consulta, (id_organizador,))
             resultado = cursor.fetchall()
             arbol_eventos.delete(*arbol_eventos.get_children())
@@ -225,6 +233,8 @@ def mostrar_eventosArbol(arbol_eventos, id_organizador):
                 fecha_fin_formateada = datetime.strptime(str(fecha_fin), "%Y-%m-%d %H:%M:%S").strftime("%d-%m-%Y")
                 
                 fechas = f"{fecha_ini_formateada} al {fecha_fin_formateada}"
+
+                
                 arbol_eventos.insert("", "end", values=(id_evento, titulo, direccion, fechas))
     except Exception as e:
         messagebox.showerror(title="Error de Conexión", message="¡Ups! Hubo un error al conectar con la Base de Datos")
@@ -279,55 +289,180 @@ def mostrar_CategoriasUbicaciones(combo_cate, combo_ubi):
 
     return dictCategorias, dictUbicaciones
 #GUARDAR EVENTO------------------------------------------
-def guardar_evento(ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc, id_organizador,  dictCategorias, dictUbicaciones, arbol_eventos):
+def guardar_evento(ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc, id_organizador,  
+                   dictCategorias, dictUbicaciones, arbol_eventos, spin_hr_ini, spin_min_ini, spin_hr_fin, spin_min_fin):
+    #VALIDACION DE QUE NINGUN  WIDGET QUEDE VACIO
     if(len(ent_tit.get()) > 0 and len(combo_cate.get()) > 0 and len(combo_ubi.get()) > 0 and len(dateEntry_inicio.get()) > 0 and
-       len(dateEntry_fin.get()) > 0 and len(combo_est.get()) > 0):
+       len(dateEntry_fin.get()) > 0 and len(combo_est.get()) > 0 and len(spin_hr_ini.get()) > 0 and len(spin_min_ini.get()) > 0 and
+       len(spin_hr_fin.get()) > 0 and len(spin_min_fin.get()) > 0):
         
-        titulo = ent_tit.get()
+        
+        fecha_inicio_date = dateEntry_inicio.get_date()
+        fecha_fin_date = dateEntry_fin.get_date()
 
-        id_categoria = dictCategorias[combo_cate.get()]
-        id_ubicacion = dictUbicaciones[combo_ubi.get()]
-        fechaInicio = dateEntry_inicio.get()
-        fechaFinal = dateEntry_fin.get()
-        descripcion = ent_desc.get()    
-        estado = combo_est.get()
+        hora_inicio = int(spin_hr_ini.get())
+        minuto_inicio = int(spin_min_ini.get())
+        hora_fin = int(spin_hr_fin.get())
+        minuto_fin = int(spin_min_fin.get())
+
+        fechaInicio_dt = datetime(year=fecha_inicio_date.year,month=fecha_inicio_date.month,day=fecha_inicio_date.day,hour=hora_inicio,minute=minuto_inicio)
+        fechaFinal_dt = datetime(year=fecha_fin_date.year,month=fecha_fin_date.month,day=fecha_fin_date.day,hour=hora_fin,minute=minuto_fin)
+        #VALIDACION QUE LA FECHA FINAL NO SEA MAYOR O IGUAL A LA FECHA DE INICIO (Incluye la hora en el analisis)
+        if(fechaFinal_dt <= fechaInicio_dt):
+            messagebox.showerror(title="Fechas inválidas", message="La fecha y hora de fin no pueden ser anteriores o iguales a la de inicio.")
+        else:
+            titulo = ent_tit.get()
+            id_categoria = dictCategorias[combo_cate.get()]
+            id_ubicacion = dictUbicaciones[combo_ubi.get()]
+            descripcion = ent_desc.get()    
+            estado = combo_est.get()
+
+            try: 
+                fechaInicio = fechaInicio_dt.strftime("%Y-%m-%d %H:%M:%S")
+                fechaFinal = fechaFinal_dt.strftime("%Y-%m-%d %H:%M:%S")
+
+                conexion = funciones_generales.iniciarConexion(vectorConexion)
+                cursor = conexion.cursor()
+
+                consulta = "SELECT COUNT(*) FROM Evento WHERE titulo = %s and id_organizador = %s and id_categoria = %s and id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s and estado = %s"
+                cursor.execute(consulta, (titulo, id_organizador, id_categoria, id_ubicacion, fechaInicio, fechaFinal, estado, ))
+                resultado = cursor.fetchone()[0]
+
+                consulta2 = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s"
+                cursor.execute(consulta2, (id_ubicacion, fechaInicio, fechaFinal, ))
+                resultado2 = cursor.fetchone()[0]
+
+                consulta_solapamiento = "SELECT COUNT(*) FROM Evento WHERE id_ubicacion = %s AND fecha_inicio < %s AND fecha_fin > %s"
+                cursor.execute(consulta_solapamiento, (id_ubicacion, fechaFinal, fechaInicio, ))
+                solapados = cursor.fetchone()[0]
+
+                if resultado > 0:
+                    messagebox.showerror(title="Error", message="Este evento ya está registrado.")
+                elif(resultado2 > 0):
+                    messagebox.showerror(title="Error", message="Ya existe eventos con esta ubicacion y horario.")
+                elif solapados > 0:
+                    messagebox.showerror(title="Conflicto de horario", message="Ya hay un evento en esa ubicación que se superpone con las fechas ingresadas.")
+                else:
+                    #MODIFICAR------------------
+                    if len(ent_id.get()) > 0:
+                        id = ent_id.get()
+                        consulta = "UPDATE Evento SET titulo=%s, descripcion=%s, id_categoria=%s, fecha_inicio=%s, fecha_fin=%s, estado=%s, id_ubicacion=%s WHERE id_evento = %s"
+                        valores = (titulo, descripcion, id_categoria, fechaInicio, fechaFinal, estado, id_ubicacion, id)
+                        cursor.execute(consulta, valores)
+                        conexion.commit()
+                        messagebox.showinfo(title="Éxito", message="¡Evento Actualizado Correctamente!")
+                    #GUARDAR--------------------
+                    else:
+                        consulta = "INSERT INTO Evento (id_organizador, titulo, descripcion, id_categoria, fecha_inicio, fecha_fin, estado, id_ubicacion) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                        cursor.execute(consulta, (id_organizador, titulo, descripcion, id_categoria, fechaInicio, fechaFinal, estado, id_ubicacion))
+                        conexion.commit()
+                        messagebox.showinfo(title="Éxito", message="¡Evento Registrado Correctamente!")
+                    #Limpiar todos los Cambos-----------------
+                    ent_id.config(state="normal")
+                    ent_id.delete(0, "end")
+                    ent_id.config(state="readonly")
+                    ent_tit.delete(0, "end")
+                    combo_cate.set("")
+                    combo_ubi.set("")
+                    dateEntry_inicio.config(state="normal")
+                    dateEntry_inicio.delete(0, "end")
+                    dateEntry_inicio.config(state="readonly")
+                    spin_hr_ini.config(state="normal")
+                    spin_hr_ini.delete(0, "end")
+                    spin_hr_ini.config(state="readonly")
+                    spin_min_ini.config(state="normal")
+                    spin_min_ini.delete(0, "end")
+                    spin_min_ini.config(state="readonly")
+                    dateEntry_fin.config(state="normal")
+                    dateEntry_fin.delete(0, "end")
+                    dateEntry_fin.config(state="readonly")
+                    spin_hr_fin.config(state="normal")
+                    spin_hr_fin.delete(0, "end")
+                    spin_hr_fin.config(state="readonly")
+                    spin_min_fin.config(state="normal")
+                    spin_min_fin.delete(0, "end")
+                    spin_min_fin.config(state="readonly")
+                    combo_est.set("")
+                    ent_desc.delete(0, "end")
+                    mostrar_eventosArbol(arbol_eventos, id_organizador)
+
+            except Exception as e:
+                messagebox.showerror(title="Error de Conexión", message="¡Ups! Hubo un error al conectar con la base de datos.")
+                print(e)
+
+            finally:
+                try:
+                    cursor.close()
+                    conexion.close()
+                except:
+                    pass
+    else:
+        messagebox.showerror(title="Campos vacíos", message="Por favor llene todos los campos.")
+#ELIMINAR EVENTO-----------------------------------------
+def eliminar_evento(ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, ent_desc,
+                    arbol_eventos, spin_hr_ini, spin_min_ini, spin_hr_fin, spin_min_fin, id_organizador):
+    
+    if(len(ent_tit.get()) > 0 and len(combo_cate.get()) > 0 and len(combo_ubi.get()) > 0 and len(dateEntry_inicio.get()) > 0 and
+       len(dateEntry_fin.get()) > 0 and len(combo_est.get()) > 0 and len(spin_hr_ini.get()) > 0 and len(spin_min_ini.get()) > 0 and
+       len(spin_hr_fin.get()) > 0 and len(spin_min_fin.get()) > 0):
+        
+        id = ent_id.get()
         try:
             conexion = funciones_generales.iniciarConexion(vectorConexion)
             cursor = conexion.cursor()
+
+            consulta = "DELETE FROM Evento WHERE id_evento = %s"
+            cursor.execute(consulta,(id, ))
+            conexion.commit()
+            messagebox.showinfo(title="Éxito", message="¡Evento Eliminado Correctamente!")
+
+            #Limpiar todos los Cambos-----------------
+            ent_id.config(state="normal")
+            ent_id.delete(0, "end")
+            ent_id.config(state="readonly")
+            ent_tit.delete(0, "end")
+            combo_cate.set("")
+            combo_ubi.set("")
+            dateEntry_inicio.config(state="normal")
+            dateEntry_inicio.delete(0, "end")
+            dateEntry_inicio.config(state="readonly")
+            spin_hr_ini.config(state="normal")
+            spin_hr_ini.delete(0, "end")
+            spin_hr_ini.config(state="readonly")
+            spin_min_ini.config(state="normal")
+            spin_min_ini.delete(0, "end")
+            spin_min_ini.config(state="readonly")
+            dateEntry_fin.config(state="normal")
+            dateEntry_fin.delete(0, "end")
+            dateEntry_fin.config(state="readonly")
+            spin_hr_fin.config(state="normal")
+            spin_hr_fin.delete(0, "end")
+            spin_hr_fin.config(state="readonly")
+            spin_min_fin.config(state="normal")
+            spin_min_fin.delete(0, "end")
+            spin_min_fin.config(state="readonly")
+            combo_est.set("")
+            ent_desc.delete(0, "end")
+
             
-            consulta = "SELECT COUNT(*) FROM Evento WHERE titulo = %s and id_organizador = %s and id_categoria = %s and id_ubicacion = %s and fecha_inicio = %s and fecha_fin = %s and estado = %s"
-            cursor.execute(consulta, (titulo, id_organizador, id_categoria, id_ubicacion, fechaInicio, fechaFinal, estado, ))
-            resultado = cursor.fetchone()[0]
-            if(resultado > 0):
-                messagebox.showerror(title="Error", message="Este evento ya está registrado.")
-            else:
-                if(len(ent_id.get()) > 0):
-                    id = ent_id.get()
-                    
-                    consulta= "UPDATE Evento SET titulo=%s, descripcion=%s, id_categoria=%s, fecha_inicio=%s, fecha_fin=%s, estado=%s, id_ubicacion=%s WHERE id_evento = %s"
-                    valores = (titulo, id_categoria,fechaInicio,fechaFinal,estado,id_ubicacion, id)
-                    cursor.execute(consulta, valores)
-                    conexion.commit()
-                    messagebox.showinfo(title="Éxito", message="¡Ubicacion Actualizada Correctamente!")
-                else:
-                    consulta = "INSERT INTO Evento (id_organizador, titulo, descripcion, id_categoria, fecha_inicio, fecha_fin, estado, id_ubicacion) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-                    cursor.execute(consulta, (id_organizador, titulo, descripcion, id_categoria,  fechaInicio, fechaFinal, estado, id_ubicacion, ))
-                    conexion.commit()
-                    messagebox.showinfo(title="Éxito", message="¡Evento Registrado Correctamente!")
+            arbol_eventos.selection_remove(arbol_eventos.selection())
+            funciones_generales.limpiar_treeview(arbol_eventos)
+            mostrar_eventosArbol(arbol_eventos, id_organizador)
+        except mysql.connector.IntegrityError as e:  
+            if e.errno == 1451: 
+                messagebox.showerror(title="Error de Eliminación", message="No se puede eliminar el evento, ya que tiene entradas asociadas.")
             
-            mostrar_eventosArbol(arbol_eventos,id_organizador)
         except Exception as e:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
             print (e)
-        finally:
+        finally: 
             try:
                 cursor.close()
                 conexion.close()
             except:
                 pass
-        
     else:
-        messagebox.showerror(title="Campos vacios", message="Por favor llene los campos")
+        messagebox.showerror(title="Campos vacíos", message="Por favor llene todos los campos.")
 #TOMAR DATOS TREEVIEW------------------------------------
 def tomar_datos_eventosArbol(event, ent_id, ent_tit, combo_cate, combo_ubi, dateEntry_inicio, dateEntry_fin, combo_est, 
                              ent_desc, id_organizador, dictCategorias, dictUbicaciones, arbol_eventos, btn_eliminar):
@@ -566,6 +701,8 @@ def eliminar_ubicacion(ent_id, ent_nomCalle, ent_altura, arbol_ubicacion):
 
             ent_nomCalle.delete(0,END)
             ent_altura.delete(0,END)
+            arbol_ubicacion.selection_remove(arbol_ubicacion.selection())
+            funciones_generales.limpiar_treeview(arbol_ubicacion)
             mostrar_ubicacionesArbol(arbol_ubicacion)
         except Exception as e:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
@@ -714,6 +851,8 @@ def eliminar_categoria(ent_id, ent_nom, arbol_categorias):
             ent_id.delete(0,END)
             ent_id.config(state="readonly")
             ent_nom.delete(0,END)
+            arbol_categorias.selection_remove(arbol_categorias.selection())
+            funciones_generales.limpiar_treeview(arbol_categorias)
             mostrar_categoriasArbol(arbol_categorias)
         except Exception as e:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
@@ -871,6 +1010,6 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_notificaciones.config(command=partial(panel_administrador_Notificaciones.mostrar_pagina_notificaciones,vector_paginas, app_MenuOrg, botones, 6, fuente))
     btn_principal.config(bg="gainsboro")
 
-
+    funciones_generales.actualizar_estados_eventos(vectorConexion)
 
 
