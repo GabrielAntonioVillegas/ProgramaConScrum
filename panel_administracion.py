@@ -51,7 +51,7 @@ def mostrar_pagina_menuPrincipal(vector_paginas, app_MenuOrg, botones, btn_selec
     
     # Llamar a la función que obtiene los datos y llena el Treeview
     mostrar_eventos_con_estadisticas(treeview, id_organizador)
-
+#Mostrar Treeview Eventos Con Estadisticas---------------
 def mostrar_eventos_con_estadisticas(arbol_eventos, id_organizador):
     try:
         # Establecer conexión a la base de datos
@@ -114,6 +114,9 @@ def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado
 
     lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+#
+#
+#
 #PAGINA EVENTO-------------------------------------------
 def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
     if(verificar_Ubicaciones_Categorias_Evento() == False):

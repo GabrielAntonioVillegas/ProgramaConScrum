@@ -14,7 +14,9 @@ boton_seleccionado = None
 #FUNCIONES=============================================================================
 
 #====================================[PANTALLAS]
-
+def abrirPantallaRegistrarse(app, fuente, app_Inse):
+    app_Inse.destroy()
+    creacionPantalla_Registrarse(app, fuente)
 #--------------------Centrar Pantalla
 def centrarPantalla(ancho,alto,app):
     ancho_pantalla = app.winfo_screenwidth()
@@ -31,6 +33,35 @@ def cerrar_abrirVentanas(app1,app2):
     #Para poder usar deiconify, la ventana a reaparecer debe primero ser ocultada con .withdraw()
     app2.deiconify() #Reaparecer Ventana
     app2.unbind_all("<Button-1>")
+#--------------------Ocultar pagina
+def ocultar_pagina(vector_paginas, paginaMostrar):
+    for pagina in vector_paginas:
+        if pagina != paginaMostrar:
+            pagina.place_forget()
+#--------------------Cargar opciones combobox
+def cargar_opciones_combobox(campo, tabla):
+    vector_opciones=["Todas"]
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta = (f"SELECT {campo} FROM {tabla} WHERE activo = 1")
+        cursor.execute(consulta)
+        resultados=cursor.fetchall()
+        if resultados:
+            for posicion in resultados:
+                vector_opciones.append(str(posicion[0]))
+        return (vector_opciones)
+    
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! No se pudieron cargar los filtros")
+        return vector_opciones
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
 #--------------------Pantalla Iniciar Sesion
 def creacionPantalla_IniciarSesion(app,fuente):
     app_Inse= Toplevel(app)
@@ -50,12 +81,16 @@ def creacionPantalla_IniciarSesion(app,fuente):
     #Contraseña
     lbl_contra = Label(app_Inse,text="Contraseña", font=(fuente, 12))
     lbl_contra.place(x=190, y=240, anchor="center")
-    ent_contra = Entry(app_Inse)
+    ent_contra = Entry(app_Inse,show="✱")
     ent_contra.place(relx=0.5, y=270, anchor="center", width=200,height=25)
-    #Boton
+    #Boton en caso de no estar registrado
+    btn_res = Button(app_Inse, text="¿No tiene un Usuario?\nPresione aquí para Registrarse", 
+                     font=(fuente, 10), relief="groove", activeforeground="blue", command=partial(abrirPantallaRegistrarse,app, fuente, app_Inse))
+    #Boton Continuar
     btn_ini = Button(app_Inse,text="Continuar", font=(fuente, 12, "bold"), 
-                     command=partial(bd_InicioSesion_Verificacion,ent_usu, ent_contra, app_Inse, app, fuente))
-    btn_ini.place(relx=0.5, y=340, anchor="center", width=200, height=30)
+                     command=partial(bd_InicioSesion_Verificacion,ent_usu, ent_contra, app_Inse, app, fuente, btn_res))
+    btn_ini.place(relx=0.5, y=330, anchor="center", width=200, height=30)
+
 
     app.withdraw()
 #--------------------Pantalla Registrarse
@@ -100,53 +135,46 @@ def creacionPantalla_Registrarse(app,fuente):
     btn_ini.place(relx=0.5, y=440, anchor="center", width=200, height=30)
 
     app.withdraw()
-#--------------------Ocultar pagina
-def ocultar_pagina(vector_paginas, paginaMostrar):
-    for pagina in vector_paginas:
-        if pagina != paginaMostrar:
-            pagina.place_forget()
-#--------------------Cargar opciones combobox
-def cargar_opciones_combobox(campo, tabla):
-    vector_opciones=["Todas"]
+#--------------------Pantalla Principal de Usuario
+def mostrar_pagina_principal(vector_paginas):
+    pagina_principal = vector_paginas[0]
+    pagina_principal.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_principal)
+
+    # Crear un Treeview
+    treeview_frame = tk.Frame(pagina_principal)
+    treeview_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+    tree = ttk.Treeview(treeview_frame, columns=("Fecha", "Descripción"), show="headings")
+    tree.heading("Fecha", text="Fecha")
+    tree.heading("Descripción", text="Descripción")
+    tree.column("Fecha",width=120)
+    tree.column("Descripción", width=500)
+    tree.pack(fill=tk.BOTH, expand=True)
+
+    # Obtener las notificaciones de la base de datos
+    notificaciones = obtener_notificaciones()
+
+    if notificaciones:
+        # Insertar los resultados en el Treeview
+        for noti in notificaciones:
+            # Aquí no es necesario usar strptime porque noti[0] ya es un objeto datetime
+            fecha_formateada = noti[0].strftime('%d-%m-%Y %H:%M:%S')
+            tree.insert("", "end", values=(fecha_formateada, noti[1]))
+    else:
+        messagebox.showinfo("Sin notificaciones", "No hay notificaciones para mostrar.")
+#--------------------Pantalla Menu Usuario
+def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
+
     try:
         conexion=iniciarConexion(vectorConexion)
-        cursor = conexion.cursor()
-        consulta = (f"SELECT {campo} FROM {tabla} WHERE activo = 1")
-        cursor.execute(consulta)
-        resultados=cursor.fetchall()
-        if resultados:
-            for posicion in resultados:
-                vector_opciones.append(str(posicion[0]))
-        return (vector_opciones)
-    
-    except Exception as e:
-        print(e)
-        messagebox.showerror(title="Error", message="Ups! No se pudieron cargar los filtros")
-        return vector_opciones
-    finally:
-        try:
-            cursor.close()
-            conexion.close()
-        except:
-            pass
-#--------------------Agregar categoria a favoritos
-def agregar_favorito(id_categoria, id_usuario):
-    try:
-        conexion = iniciarConexion(vectorConexion)
-        cursor = conexion.cursor()
-        consulta = ("SELECT * FROM PreferenciaCategoria WHERE UsuarioID = %s AND id_categoria = %s")
-        cursor.execute(consulta, (id_usuario, id_categoria,))
-
+        cursor=conexion.cursor()
+        consulta=("SELECT UsuarioID FROM Usuarios WHERE NombreUsuario = %s")
+        cursor.execute(consulta, (nombreUsuario,))
         resultado = cursor.fetchone()
-        if resultado:
-            messagebox.showerror(title="Error", message="Ya tienes esta categoria en favoritos")
-        else:
-            consulta = ("INSERT INTO PreferenciaCategoria (UsuarioID, id_categoria, activo) VALUES (%s,%s,1)")
-            cursor.execute(consulta, (id_usuario, id_categoria,))
-            conexion.commit()
-            messagebox.showinfo(title="Éxito", message="La categoria fue guardada como favorita con exito")
-        
-        print(cursor.statement)
+
+        id_usuario=resultado[0]
+
     except Exception as e:
         print(e)
         messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
@@ -158,59 +186,177 @@ def agregar_favorito(id_categoria, id_usuario):
         except:
             pass
 
-#--------------------Seleccion de asiento
-def seleccionar_asiento(id_asiento, boton):
-    global asiento_seleccionado, boton_seleccionado
+    global fuente
+    fuente = _fuente
+    app_MenuUs = Toplevel(app)
+    centrarPantalla(1000,500,app_MenuUs)
+    app_MenuUs.title("Sesion Usuario")
+    #PANEL 1 (izquierda, el mas angosto)
+    panel1 = Frame(app_MenuUs, bg="gray")
+    panel1.place(x=0, width=200, height=500)
+    #PANEL 2 (derecha, el mas ancho)
+    panel2 = Frame(app_MenuUs, bg="gainsboro")
+    panel2.place(x=200, width=800, height=500)
 
-    # Restaurar el color del botón anterior si lo había
-    if boton_seleccionado:
-        boton_seleccionado.configure(bg="green")
+    #Pagina buscar eventos
+    pagina_buscar = Frame(app_MenuUs, bg="gainsboro")
+    pagina_buscar.place(x=200, width=800, height=500)
 
-    # Marcar nuevo asiento
-    asiento_seleccionado = id_asiento
-    boton_seleccionado = boton
-    boton.configure(bg="yellow")
+    #Pagina favoritos
+    pagina_favoritos=Frame(app_MenuUs, bg="gainsboro")
+    pagina_favoritos.place(x=200, width=800, height=500)
 
-    print(f"Asiento seleccionado: {id_asiento}")
+    #Pagina carrito
+    pagina_carrito=Frame(app_MenuUs, bg="gainsboro")
+    pagina_carrito.place(x=200, width=800, height=500)
 
-def cargar_grilla_asientos(frame, entrada_id):
-    global asiento_seleccionado, boton_seleccionado
+    #Completar vector paginas
+    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito]
 
-    for widget in frame.winfo_children():
-        widget.destroy()
+    for i in range(len(vector_paginas)):
+        if vector_paginas[i] != panel2:
+            vector_paginas[i].place_forget()
 
+    #BOTON VOLVER
+    btn_volver = Button(app_MenuUs, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuUs,app))
+    btn_volver.place(x=10,y=10)
+
+    #COMPONENTES PARA EL PANEL 1
+
+    btn_principal = Button(app_MenuUs, text="Menu Principal", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
+    btn_principal.place(x=20, y=70, width=160, height=30)
+    
+    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas, id_usuario))
+    btn_buscar.place(x=20, y=100, width=160, height=30)
+    
+    btn_favoritos = Button(app_MenuUs, text="Favoritos", relief="flat", command=partial(mostrar_pagina_favoritos, app, vector_paginas, id_usuario))
+    btn_favoritos.place(x=20, y=130, width=160, height=30)
+
+    btn_carrito = Button(app_MenuUs, text="Carrito", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
+    btn_carrito.place(x=20, y=160, width=160, height=30)
+
+    #COMPONENTES PARA EL PANEL 2 (pagina principal) 
+    
+    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), bg = "gainsboro", font=(fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+#--------------------Mostrar pagina buscar
+def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
+
+    pagina_buscar = vector_paginas[1]
+    pagina_buscar.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_buscar)
+
+    lbl1=Label(pagina_buscar,text="Buscar eventos", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    def limpiar_seleccion_lista(event):
+        widget_actual = event.widget
+        if not str(widget_actual).startswith(str(lista)):
+            lista.selection_remove(lista.selection())
+    
+    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
+                                                                #Cuando se clickee cualquier parte que no sea
+                                                                #un evento del treeview, se desenfoque
+                                                                #el seleccionado anteriormente
+    #funciones locales de placeholder (texto de sugerencia del entry)
+    def clickeado(event):
+        if ent_buscar.get() == 'Busca un evento por su título...':
+            ent_buscar.delete(0, 'end')  # Borra el texto
+            ent_buscar.config(fg='black')  # Cambia el color
+            btn_buscar.config(state="normal")
+
+    def no_clickeado(event):
+        if ent_buscar.get() == '':
+            ent_buscar.insert(0, 'Busca un evento por su título...')
+            ent_buscar.config(fg='gray')
+            btn_buscar.config(state="disabled")
+
+    ent_buscar=Entry(pagina_buscar, font=(fuente, 15), fg="gray")
+    ent_buscar.insert(0,"Busca un evento por su título...")
+    ent_buscar.bind('<FocusIn>', clickeado)
+    ent_buscar.bind('<FocusOut>', no_clickeado)
+
+    ent_buscar.place(x=200, y=50, height=30, width=350)
+
+    lbl_filtros=Label(pagina_buscar, font=(fuente,12), text="Filtros:", background="gainsboro")
+    lbl_filtros.place(x=200, y=100, height=30)
+
+    lbl_categorias=Label(pagina_buscar, font=(fuente,10), text="Categoria:", background="gainsboro")
+    lbl_categorias.place(x=270, y=85, height=20)
+
+    cmb_categorias=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
+    cmb_categorias.place(x=268, y=105, height=20, width=70)
+
+    vector_categorias = cargar_opciones_combobox("nombre","Categoria")
+    cmb_categorias["values"] = vector_categorias
+    cmb_categorias.current(0)
+
+    lbl_ubicacion=Label(pagina_buscar, font=(fuente,10), text="Ubicacion:", background="gainsboro")
+    lbl_ubicacion.place(x=370, y=85, height=20)
+
+    cmb_ubicaciones=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
+    cmb_ubicaciones.place(x=350, y=105, height=20, width=110)
+
+    vector_ubicaciones = cargar_opciones_combobox("direccion","Ubicacion")
+    cmb_ubicaciones["values"]=vector_ubicaciones
+    cmb_ubicaciones.current(0)
+
+    lbl_fechas=Label(pagina_buscar,font=(fuente,10),background="gainsboro",text="Filtrar por fecha:")
+    lbl_fechas.place(x=480, y=85,height=20)
+
+    dateEntry_fecha = DateEntry(pagina_buscar,date_pattern='yyyy-mm-dd')
+    dateEntry_fecha.config(state="readonly")
+
+    def mostrar_filtro_fecha(dateEntry_fecha):
+        if estado_boton_fechas.get():
+            dateEntry_fecha.place(x=475, y=105, height=20, width=125)
+        else:
+            dateEntry_fecha.place_forget()
+    
+    estado_boton_fechas=BooleanVar()
+    chk_fechas=tk.Checkbutton(pagina_buscar, variable=estado_boton_fechas, background="gainsboro",command=partial(mostrar_filtro_fecha,dateEntry_fecha))
+    chk_fechas.place(x=580, y=86,height=20, width=20)
+
+    lista = Treeview(pagina_buscar,columns=("ID", "Título", "Dirección", "Fecha"), show="headings")
+    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=300)
+    lista.heading("ID", text="")
+    lista.heading("Título", text="Título")
+    lista.heading("Dirección", text="Dirección")
+    lista.heading("Fecha", text="Fecha")
+    lista.column("ID", width=0, stretch=False)
+    lista.column("Título", width=100, anchor="center")
+    lista.column("Dirección", width=150, anchor="center")
+    lista.column("Fecha", width=150, anchor="center")
+
+    def doble_click(event):
+        seleccion = lista.selection()
+        if not seleccion:
+            return  # No hacer nada si no hay selección
+        item_id = lista.selection()[0]
+        valores = lista.item(item_id, "values")
+        id_evento = valores[0]
+        ver_detalles_evento(app, fuente, id_evento, lista, id_usuario)
+
+    lista.bind("<Double-1>", doble_click)
     try:
-        conexion = iniciarConexion(vectorConexion)
+        conexion=iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
+        cursor.execute('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE (estado="activo" OR estado="cancelado")')
+        resultados=cursor.fetchall()
+        if resultados:
+            for idevento, titulo, ubicacion, fecha_inicio in resultados:
+                lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
+        else:
+            lista.insert("", "end", values=("", "", "No hay eventos activos", ""))
+            # Deshabilitar selección
+            def bloquear_click(event):
+                return "break"
 
-        # Obtener asientos por Entrada_id
-        consulta = "SELECT id_asiento, fila, columna, disponible FROM Asiento WHERE Entrada_id = %s"
-        cursor.execute(consulta, (entrada_id,))
-        asientos = cursor.fetchall()
-
-        if not asientos:
-            messagebox.showinfo("Info", "No hay asientos para esta entrada")
-            return
-
-        # Obtener límites para crear la grilla
-        max_fila = max(a[1] for a in asientos)
-        max_columna = max(a[2] for a in asientos)
-
-        matriz = [[None for _ in range(max_columna)] for _ in range(max_fila)]
-
-        for asiento in asientos:
-            id_asiento, fila, columna, disponible = asiento
-            color = "green" if disponible else "red"
-            state = "normal" if disponible else "disabled"
-
-            btn = Button(frame, text=f"{fila},{columna}", bg=color, width=5, state=state)
-            btn.config(command=lambda a=id_asiento, b=btn: seleccionar_asiento(a, b))
-            btn.grid(row=fila - 1, column=columna - 1, padx=2, pady=2)
-            matriz[fila - 1][columna - 1] = btn
+            lista.bind("<ButtonPress-1>", bloquear_click)
 
     except Exception as e:
         print(e)
-        messagebox.showerror("Error", "Error al cargar los asientos")
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
     finally:
         try:
             cursor.close()
@@ -218,6 +364,77 @@ def cargar_grilla_asientos(frame, entrada_id):
         except:
             pass
 
+    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, app, lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas))
+    btn_buscar.config(state="disabled")
+    btn_buscar.place(x=550, y=50, height=30, width=50)
+#--------------------Mostrar pagina notificaciones
+def mostrar_pagina_favoritos(app,vector_paginas,id_usuario):
+    pagina_favoritos = vector_paginas[2]
+    pagina_favoritos.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_favoritos)
+
+    lbl1=Label(pagina_favoritos,text="Favoritos", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    def limpiar_seleccion_lista(event):
+        widget_actual = event.widget
+        if not str(widget_actual).startswith(str(lista)):
+            lista.selection_remove(lista.selection())
+    
+    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
+                                                                #Cuando se clickee cualquier parte que no sea
+                                                                #un evento del treeview, se desenfoque
+                                                                #el seleccionado anteriormente
+
+    lista = Treeview(pagina_favoritos,columns=("Categorias:"), show="headings")
+    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=200)
+    lista.heading("Categorias:", text="Categorias:")
+    lista.column("Categorias:", width=400, anchor="center")
+
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta=('SELECT id_categoria FROM PreferenciaCategoria WHERE UsuarioID = %s AND activo=1')
+        cursor.execute(consulta,(id_usuario,))
+        resultados=cursor.fetchall()
+        if resultados:
+            # Extraer solo los ids de cada tupla
+            ids = [fila[0] for fila in resultados]
+            placeholders = ", ".join(['%s'] * len(ids))
+            consulta = f'SELECT nombre FROM Categoria WHERE id_categoria IN ({placeholders})'
+            cursor.execute(consulta, ids)
+            resultados2 = cursor.fetchall()
+            for categoria in resultados2:
+                lista.insert("", "end", values=categoria)
+        else:
+            lista.insert("", "end", values=("No tenes favoritos"))
+            # Deshabilitar selección
+            def bloquear_click(event):
+                return "break"
+
+            lista.bind("<ButtonPress-1>", bloquear_click)
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+
+    btn_eliminar = Button(pagina_favoritos, text="Eliminar de favoritos", wraplength=100,command=partial(eliminar_favoritos, lista, id_usuario, app, vector_paginas))
+    btn_eliminar.place(relx=0.5, y=400, anchor = "center")
+#--------------------Mostrar pagina carrito
+def mostrar_pagina_carrito(vector_paginas):
+    pagina_carrito = vector_paginas[3]
+    pagina_carrito.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_carrito)
+
+    lbl1=Label(pagina_carrito,text="Carrito de compras", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+#====================================[EVENTOS Y FAVORITOS]
 #--------------------Crear Ventana Detalles Evento
 def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
 
@@ -392,10 +609,6 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                 lbl_entradas.place_forget()
                 lbl_entradas.configure(text="No hay entradas disponibles para este evento")
                 lbl_entradas.place(relx=0.5, y=320, anchor="center")
-
-        
-        
-
     except Exception as e:
         print(e)
         messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
@@ -577,6 +790,34 @@ def busquedaEvento(app,lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateE
             conexion.close()
         except:
             pass
+#--------------------Agregar categoria a favoritos
+def agregar_favorito(id_categoria, id_usuario):
+    try:
+        conexion = iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta = ("SELECT * FROM PreferenciaCategoria WHERE UsuarioID = %s AND id_categoria = %s")
+        cursor.execute(consulta, (id_usuario, id_categoria,))
+
+        resultado = cursor.fetchone()
+        if resultado:
+            messagebox.showerror(title="Error", message="Ya tienes esta categoria en favoritos")
+        else:
+            consulta = ("INSERT INTO PreferenciaCategoria (UsuarioID, id_categoria, activo) VALUES (%s,%s,1)")
+            cursor.execute(consulta, (id_usuario, id_categoria,))
+            conexion.commit()
+            messagebox.showinfo(title="Éxito", message="La categoria fue guardada como favorita con exito")
+        
+        print(cursor.statement)
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+    
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
 #--------------------Eliminar categoria de favoritos
 def eliminar_favoritos(lista, id_usuario, app,vector_paginas):
     selected_item = lista.focus()
@@ -609,8 +850,6 @@ def eliminar_favoritos(lista, id_usuario, app,vector_paginas):
                 cursor.close()
             except:
                 pass
-
-
 #--------------------Mostrar pagina principal (notificaciones)
 def obtener_notificaciones():
     try:
@@ -643,153 +882,60 @@ def obtener_notificaciones():
         except:
             pass
 
-def mostrar_pagina_principal(vector_paginas):
-    pagina_principal = vector_paginas[0]
-    pagina_principal.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_principal)
+#====================================[SELECCION DE ASIENTOS]
+#--------------------Seleccion de asiento
+def seleccionar_asiento(id_asiento, boton):
+    global asiento_seleccionado, boton_seleccionado
 
-    # Crear un Treeview
-    treeview_frame = tk.Frame(pagina_principal)
-    treeview_frame.place(relx=0.5, rely=0.5, anchor="center")
+    # Restaurar el color del botón anterior si lo había
+    if boton_seleccionado:
+        boton_seleccionado.configure(bg="green")
 
-    tree = ttk.Treeview(treeview_frame, columns=("Fecha", "Descripción"), show="headings")
-    tree.heading("Fecha", text="Fecha")
-    tree.heading("Descripción", text="Descripción")
-    tree.column("Fecha",width=120)
-    tree.column("Descripción", width=500)
-    tree.pack(fill=tk.BOTH, expand=True)
+    # Marcar nuevo asiento
+    asiento_seleccionado = id_asiento
+    boton_seleccionado = boton
+    boton.configure(bg="yellow")
 
-    # Obtener las notificaciones de la base de datos
-    notificaciones = obtener_notificaciones()
+    print(f"Asiento seleccionado: {id_asiento}")
+#--------------------CARGAR GRILLA ASIENTOS
+def cargar_grilla_asientos(frame, entrada_id):
+    global asiento_seleccionado, boton_seleccionado
 
-    if notificaciones:
-        # Insertar los resultados en el Treeview
-        for noti in notificaciones:
-            # Aquí no es necesario usar strptime porque noti[0] ya es un objeto datetime
-            fecha_formateada = noti[0].strftime('%d-%m-%Y %H:%M:%S')
-            tree.insert("", "end", values=(fecha_formateada, noti[1]))
-    else:
-        messagebox.showinfo("Sin notificaciones", "No hay notificaciones para mostrar.")
+    for widget in frame.winfo_children():
+        widget.destroy()
 
-    
-#-------------------Mostrar pagina buscar
-def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
-
-    pagina_buscar = vector_paginas[1]
-    pagina_buscar.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_buscar)
-
-    lbl1=Label(pagina_buscar,text="Buscar eventos", background="gainsboro", font = (fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-
-    def limpiar_seleccion_lista(event):
-        widget_actual = event.widget
-        if not str(widget_actual).startswith(str(lista)):
-            lista.selection_remove(lista.selection())
-    
-    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
-                                                                #Cuando se clickee cualquier parte que no sea
-                                                                #un evento del treeview, se desenfoque
-                                                                #el seleccionado anteriormente
-    #funciones locales de placeholder (texto de sugerencia del entry)
-    def clickeado(event):
-        if ent_buscar.get() == 'Busca un evento por su título...':
-            ent_buscar.delete(0, 'end')  # Borra el texto
-            ent_buscar.config(fg='black')  # Cambia el color
-            btn_buscar.config(state="normal")
-
-    def no_clickeado(event):
-        if ent_buscar.get() == '':
-            ent_buscar.insert(0, 'Busca un evento por su título...')
-            ent_buscar.config(fg='gray')
-            btn_buscar.config(state="disabled")
-
-    ent_buscar=Entry(pagina_buscar, font=(fuente, 15), fg="gray")
-    ent_buscar.insert(0,"Busca un evento por su título...")
-    ent_buscar.bind('<FocusIn>', clickeado)
-    ent_buscar.bind('<FocusOut>', no_clickeado)
-
-    ent_buscar.place(x=200, y=50, height=30, width=350)
-
-    lbl_filtros=Label(pagina_buscar, font=(fuente,12), text="Filtros:", background="gainsboro")
-    lbl_filtros.place(x=200, y=100, height=30)
-
-    lbl_categorias=Label(pagina_buscar, font=(fuente,10), text="Categoria:", background="gainsboro")
-    lbl_categorias.place(x=270, y=85, height=20)
-
-    cmb_categorias=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
-    cmb_categorias.place(x=268, y=105, height=20, width=70)
-
-    vector_categorias = cargar_opciones_combobox("nombre","Categoria")
-    cmb_categorias["values"] = vector_categorias
-    cmb_categorias.current(0)
-
-    lbl_ubicacion=Label(pagina_buscar, font=(fuente,10), text="Ubicacion:", background="gainsboro")
-    lbl_ubicacion.place(x=370, y=85, height=20)
-
-    cmb_ubicaciones=Combobox(pagina_buscar, font=(fuente,12), state="readonly")
-    cmb_ubicaciones.place(x=350, y=105, height=20, width=110)
-
-    vector_ubicaciones = cargar_opciones_combobox("direccion","Ubicacion")
-    cmb_ubicaciones["values"]=vector_ubicaciones
-    cmb_ubicaciones.current(0)
-
-    lbl_fechas=Label(pagina_buscar,font=(fuente,10),background="gainsboro",text="Filtrar por fecha:")
-    lbl_fechas.place(x=480, y=85,height=20)
-
-    dateEntry_fecha = DateEntry(pagina_buscar,date_pattern='yyyy-mm-dd')
-    dateEntry_fecha.config(state="readonly")
-
-    def mostrar_filtro_fecha(dateEntry_fecha):
-        if estado_boton_fechas.get():
-            dateEntry_fecha.place(x=475, y=105, height=20, width=125)
-        else:
-            dateEntry_fecha.place_forget()
-    
-    estado_boton_fechas=BooleanVar()
-    chk_fechas=tk.Checkbutton(pagina_buscar, variable=estado_boton_fechas, background="gainsboro",command=partial(mostrar_filtro_fecha,dateEntry_fecha))
-    chk_fechas.place(x=580, y=86,height=20, width=20)
-
-    lista = Treeview(pagina_buscar,columns=("ID", "Título", "Dirección", "Fecha"), show="headings")
-    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=300)
-    lista.heading("ID", text="")
-    lista.heading("Título", text="Título")
-    lista.heading("Dirección", text="Dirección")
-    lista.heading("Fecha", text="Fecha")
-    lista.column("ID", width=0, stretch=False)
-    lista.column("Título", width=100, anchor="center")
-    lista.column("Dirección", width=150, anchor="center")
-    lista.column("Fecha", width=150, anchor="center")
-
-    def doble_click(event):
-        seleccion = lista.selection()
-        if not seleccion:
-            return  # No hacer nada si no hay selección
-        item_id = lista.selection()[0]
-        valores = lista.item(item_id, "values")
-        id_evento = valores[0]
-        ver_detalles_evento(app, fuente, id_evento, lista, id_usuario)
-
-    lista.bind("<Double-1>", doble_click)
     try:
-        conexion=iniciarConexion(vectorConexion)
+        conexion = iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
-        cursor.execute('SELECT id_evento, titulo, Ubicacion.direccion, fecha_inicio FROM Evento INNER JOIN Ubicacion ON Evento.id_ubicacion = Ubicacion.id_ubicacion WHERE (estado="activo" OR estado="cancelado")')
-        resultados=cursor.fetchall()
-        if resultados:
-            for idevento, titulo, ubicacion, fecha_inicio in resultados:
-                lista.insert("", "end", values=(idevento, titulo, ubicacion, fecha_inicio))
-        else:
-            lista.insert("", "end", values=("", "", "No hay eventos activos", ""))
-            # Deshabilitar selección
-            def bloquear_click(event):
-                return "break"
 
-            lista.bind("<ButtonPress-1>", bloquear_click)
+        # Obtener asientos por Entrada_id
+        consulta = "SELECT id_asiento, fila, columna, disponible FROM Asiento WHERE Entrada_id = %s"
+        cursor.execute(consulta, (entrada_id,))
+        asientos = cursor.fetchall()
+
+        if not asientos:
+            messagebox.showinfo("Info", "No hay asientos para esta entrada")
+            return
+
+        # Obtener límites para crear la grilla
+        max_fila = max(a[1] for a in asientos)
+        max_columna = max(a[2] for a in asientos)
+
+        matriz = [[None for _ in range(max_columna)] for _ in range(max_fila)]
+
+        for asiento in asientos:
+            id_asiento, fila, columna, disponible = asiento
+            color = "green" if disponible else "red"
+            state = "normal" if disponible else "disabled"
+
+            btn = Button(frame, text=f"{fila},{columna}", bg=color, width=5, state=state)
+            btn.config(command=lambda a=id_asiento, b=btn: seleccionar_asiento(a, b))
+            btn.grid(row=fila - 1, column=columna - 1, padx=2, pady=2)
+            matriz[fila - 1][columna - 1] = btn
 
     except Exception as e:
         print(e)
-        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
+        messagebox.showerror("Error", "Error al cargar los asientos")
     finally:
         try:
             cursor.close()
@@ -797,156 +943,7 @@ def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
         except:
             pass
 
-    btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, app, lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas))
-    btn_buscar.config(state="disabled")
-    btn_buscar.place(x=550, y=50, height=30, width=50)
-    
-    
-#--------------------Mostrar pagina notificaciones
-def mostrar_pagina_favoritos(app,vector_paginas,id_usuario):
-    pagina_favoritos = vector_paginas[2]
-    pagina_favoritos.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_favoritos)
 
-    lbl1=Label(pagina_favoritos,text="Favoritos", background="gainsboro", font = (fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-    def limpiar_seleccion_lista(event):
-        widget_actual = event.widget
-        if not str(widget_actual).startswith(str(lista)):
-            lista.selection_remove(lista.selection())
-    
-    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
-                                                                #Cuando se clickee cualquier parte que no sea
-                                                                #un evento del treeview, se desenfoque
-                                                                #el seleccionado anteriormente
-
-    lista = Treeview(pagina_favoritos,columns=("Categorias:"), show="headings")
-    lista.place(relx=0.5, anchor="center", relwidth=0.5, height=300, y=200)
-    lista.heading("Categorias:", text="Categorias:")
-    lista.column("Categorias:", width=400, anchor="center")
-
-    try:
-        conexion=iniciarConexion(vectorConexion)
-        cursor = conexion.cursor()
-        consulta=('SELECT id_categoria FROM PreferenciaCategoria WHERE UsuarioID = %s AND activo=1')
-        cursor.execute(consulta,(id_usuario,))
-        resultados=cursor.fetchall()
-        if resultados:
-            # Extraer solo los ids de cada tupla
-            ids = [fila[0] for fila in resultados]
-            placeholders = ", ".join(['%s'] * len(ids))
-            consulta = f'SELECT nombre FROM Categoria WHERE id_categoria IN ({placeholders})'
-            cursor.execute(consulta, ids)
-            resultados2 = cursor.fetchall()
-            for categoria in resultados2:
-                lista.insert("", "end", values=categoria)
-        else:
-            lista.insert("", "end", values=("No tenes favoritos"))
-            # Deshabilitar selección
-            def bloquear_click(event):
-                return "break"
-
-            lista.bind("<ButtonPress-1>", bloquear_click)
-
-    except Exception as e:
-        print(e)
-        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
-    finally:
-        try:
-            cursor.close()
-            conexion.close()
-        except:
-            pass
-
-    btn_eliminar = Button(pagina_favoritos, text="Eliminar de favoritos", wraplength=100,command=partial(eliminar_favoritos, lista, id_usuario, app, vector_paginas))
-    btn_eliminar.place(relx=0.5, y=400, anchor = "center")
-
-#--------------------Mostrar pagina carrito
-def mostrar_pagina_carrito(vector_paginas):
-    pagina_carrito = vector_paginas[3]
-    pagina_carrito.place(x=200, width=800, height=500)
-    ocultar_pagina(vector_paginas, pagina_carrito)
-
-    lbl1=Label(pagina_carrito,text="Carrito de compras", background="gainsboro", font = (fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#--------------------Pantalla Menu Usuario
-def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
-
-    try:
-        conexion=iniciarConexion(vectorConexion)
-        cursor=conexion.cursor()
-        consulta=("SELECT UsuarioID FROM Usuarios WHERE NombreUsuario = %s")
-        cursor.execute(consulta, (nombreUsuario,))
-        resultado = cursor.fetchone()
-
-        id_usuario=resultado[0]
-
-    except Exception as e:
-        print(e)
-        messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
-    
-    finally:
-        try:
-            conexion.close()
-            cursor.close()
-        except:
-            pass
-
-    global fuente
-    fuente = _fuente
-    app_MenuUs = Toplevel(app)
-    centrarPantalla(1000,500,app_MenuUs)
-    app_MenuUs.title("Sesion Usuario")
-    #PANEL 1 (izquierda, el mas angosto)
-    panel1 = Frame(app_MenuUs, bg="gray")
-    panel1.place(x=0, width=200, height=500)
-    #PANEL 2 (derecha, el mas ancho)
-    panel2 = Frame(app_MenuUs, bg="gainsboro")
-    panel2.place(x=200, width=800, height=500)
-
-    #Pagina buscar eventos
-    pagina_buscar = Frame(app_MenuUs, bg="gainsboro")
-    pagina_buscar.place(x=200, width=800, height=500)
-
-    #Pagina favoritos
-    pagina_favoritos=Frame(app_MenuUs, bg="gainsboro")
-    pagina_favoritos.place(x=200, width=800, height=500)
-
-    #Pagina carrito
-    pagina_carrito=Frame(app_MenuUs, bg="gainsboro")
-    pagina_carrito.place(x=200, width=800, height=500)
-
-    #Completar vector paginas
-    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito]
-
-    for i in range(len(vector_paginas)):
-        if vector_paginas[i] != panel2:
-            vector_paginas[i].place_forget()
-
-    #BOTON VOLVER
-    btn_volver = Button(app_MenuUs, text="🡸", command=partial(cerrar_abrirVentanas,app_MenuUs,app))
-    btn_volver.place(x=10,y=10)
-
-    #COMPONENTES PARA EL PANEL 1
-
-    btn_principal = Button(app_MenuUs, text="Menu Principal", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
-    btn_principal.place(x=20, y=70, width=160, height=30)
-    
-    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas, id_usuario))
-    btn_buscar.place(x=20, y=100, width=160, height=30)
-    
-    btn_favoritos = Button(app_MenuUs, text="Favoritos", relief="flat", command=partial(mostrar_pagina_favoritos, app, vector_paginas, id_usuario))
-    btn_favoritos.place(x=20, y=130, width=160, height=30)
-
-    btn_carrito = Button(app_MenuUs, text="Carrito", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
-    btn_carrito.place(x=20, y=160, width=160, height=30)
-
-    #COMPONENTES PARA EL PANEL 2 (pagina principal) 
-    
-    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), bg = "gainsboro", font=(fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-
-    
 #====================================[BASE DE DATOS]
 def iniciarConexion(vectorConexion):
     conexion = mysql.connector.connect(
@@ -1020,7 +1017,7 @@ def bd_registrarse_usuario(ent_nombre, ent_ape, ent_mail, ent_contra, ent_usu):
         except:
             pass
 #--------------------INICIAR SESION
-def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
+def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente, btn_res):
     if(len(ent_usu.get()) > 0 and len(ent_contra.get()) > 0):
         nombreUsuario = ent_usu.get()
         contrasena = ent_contra.get()
@@ -1071,7 +1068,8 @@ def bd_InicioSesion_Verificacion(ent_usu, ent_contra, app_Inse, app, fuente):
                     messagebox.showerror(title= "Usuario No Encontrado", message=("No se encontró el usuario '"+nombreUsuario+ "' intente nuevamente"))
                     ent_usu.delete(0,END)
                     ent_contra.delete(0,END) 
-                    ent_usu.focus_set()   
+                    ent_usu.focus_set()
+                    btn_res.place(relx=0.5, y=380, anchor="center", width=200, height=40)
      
         except Exception as e:
             messagebox.showerror(title="Error de Conexion", message="¡Ups! Hubo un Error al conectar con la Base de Datos")
