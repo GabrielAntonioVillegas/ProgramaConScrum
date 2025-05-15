@@ -468,7 +468,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
     ventanaDetalles = tk.Toplevel(app)
     ventanaDetalles.title("Detalles del evento")
     ventanaDetalles.protocol("WM_DELETE_WINDOW", cerrar_ventana_detalle) #que hacer cuando se cierra la ventana manualmente
-    centrarPantalla(1000,1000,ventanaDetalles)
+    centrarPantalla(600,700,ventanaDetalles)
     ventanaDetalles.resizable(False,False)
 
     try:
@@ -581,13 +581,13 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                         cursor = conexion.cursor()
                         consulta = "SELECT id_entrada, asiento FROM Entrada WHERE tipo = %s AND Evento_id = %s"
                         cursor.execute(consulta, (tipo_entrada, id_evento,))
-                        resultado = cursor.fetchone()
+                        resultado = cursor.fetchall()
 
                         for widget in frame_grilla.winfo_children():
                             widget.destroy()
 
                         if resultado:
-                            id_entrada, tiene_asientos = resultado
+                            id_entrada, tiene_asientos = resultado[0]
                             if tiene_asientos:
                                 lbl_cupo.place_forget()
                                 cargar_grilla_asientos(frame_grilla, id_entrada)
@@ -596,8 +596,8 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                                 #ACA VA SI NO TIENE ASIENTOS
                                 consulta=("SELECT cupo_disponible FROM Entrada WHERE id_entrada = %s")
                                 cursor.execute(consulta, (id_entrada,))
-                                cupo = cursor.fetchone()
-                                lbl_cupo.configure(text=("Disponibles: "+str(cupo[0])), font=(fuente,10))
+                                cupo = cursor.fetchall()
+                                lbl_cupo.configure(font=(fuente,10), text=("Disponibles: "+str(cupo[0][0])))
                                 lbl_cupo.place(relx=0.5, y=550, anchor="center")
                         else:
                             messagebox.showerror("Error", "Entrada no encontrada")
@@ -915,11 +915,16 @@ def cargar_grilla_asientos(frame, entrada_id):
     for widget in frame.winfo_children():
         widget.destroy()
 
+    # Tamaño fijo del frame
+    ancho_frame = 200
+    alto_frame = 200
+    frame.config(width=ancho_frame, height=alto_frame)
+    frame.pack_propagate(False)
+
     try:
         conexion = iniciarConexion(vectorConexion)
         cursor = conexion.cursor()
 
-        # Obtener asientos por Entrada_id
         consulta = "SELECT id_asiento, fila, columna, disponible FROM Asiento WHERE Entrada_id = %s"
         cursor.execute(consulta, (entrada_id,))
         asientos = cursor.fetchall()
@@ -928,21 +933,28 @@ def cargar_grilla_asientos(frame, entrada_id):
             messagebox.showinfo("Info", "No hay asientos para esta entrada")
             return
 
-        # Obtener límites para crear la grilla
         max_fila = max(a[1] for a in asientos)
         max_columna = max(a[2] for a in asientos)
 
-        matriz = [[None for _ in range(max_columna)] for _ in range(max_fila)]
+        # Tamaño dinámico de cada botón
+        btn_ancho = ancho_frame // max_columna
+        btn_alto = alto_frame // max_fila
 
         for asiento in asientos:
             id_asiento, fila, columna, disponible = asiento
             color = "green" if disponible else "red"
             state = "normal" if disponible else "disabled"
 
-            btn = Button(frame, text=f"{fila},{columna}", bg=color, width=5, state=state)
+            btn = Button(frame, text=f"{fila},{columna}", bg=color, state=state)
             btn.config(command=lambda a=id_asiento, b=btn: seleccionar_asiento(a, b))
-            btn.grid(row=fila - 1, column=columna - 1, padx=2, pady=2)
-            matriz[fila - 1][columna - 1] = btn
+
+            # Usar place para posicionar con tamaño dinámico
+            btn.place(
+                x=(columna - 1) * btn_ancho,
+                y=(fila - 1) * btn_alto,
+                width=btn_ancho,
+                height=btn_alto
+            )
 
     except Exception as e:
         print(e)
