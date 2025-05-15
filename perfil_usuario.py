@@ -212,11 +212,11 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     pagina_carrito.place(x=200, width=800, height=500)
 
     #Pagina cuenta
-    pagina_cuenta=Frame(app_MenuUs, bg="gainsboro")
+    pagina_cuentaa=Frame(app_MenuUs, bg="gainsboro")
     pagina_carrito.place(x=200, width=800, height=500)
 
     #Completar vector paginas
-    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuenta]
+    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuentaa]
 
     for i in range(len(vector_paginas)):
         if vector_paginas[i] != panel2:
@@ -561,7 +561,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
         if estado=="activo":
             lbl_entradas = Label(ventanaDetalles, text="Entradas: ", font = (fuente, 10))
             lbl_entradas.place(relx=0.5, y=330, anchor="center")
-            cmb_entradas = Combobox(ventanaDetalles,font=(fuente,12), state="readonly")
+            cmb_entradas = Combobox(ventanaDetalles,font=(fuente,10), state="readonly")
             cmb_entradas.place(relx=0.5, y=360, anchor="center")
             vector_entradas = cargar_entradas(id_evento)
             if vector_entradas:
@@ -569,6 +569,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                 cmb_entradas.current(0)
                 frame_grilla = Frame(ventanaDetalles)
                 frame_grilla.place(relx=0.5, y=550,anchor="center")
+                lbl_cupo=Label(ventanaDetalles)
                 def cargar_asientos_cb():
                     tipo_entrada = cmb_entradas.get()
                     if not tipo_entrada:
@@ -588,6 +589,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                         if resultado:
                             id_entrada, tiene_asientos = resultado
                             if tiene_asientos:
+                                lbl_cupo.place_forget()
                                 cargar_grilla_asientos(frame_grilla, id_entrada)
                             else:
                                 frame_grilla.place_forget()
@@ -595,7 +597,7 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                                 consulta=("SELECT cupo_disponible FROM Entrada WHERE id_entrada = %s")
                                 cursor.execute(consulta, (id_entrada,))
                                 cupo = cursor.fetchone()
-                                lbl_cupo=Label(ventanaDetalles, text=("Disponibles: "+str(cupo[0])))
+                                lbl_cupo.configure(text=("Disponibles: "+str(cupo[0])), font=(fuente,10))
                                 lbl_cupo.place(relx=0.5, y=550, anchor="center")
                         else:
                             messagebox.showerror("Error", "Entrada no encontrada")
