@@ -104,19 +104,6 @@ def mostrar_eventos_con_estadisticas(arbol_eventos, id_organizador):
 #
 #
 #
-#PAGINA CUENTA-------------------------------------------
-def mostrar_pagina_cuenta(vector_paginas, app_MenuOrg, botones, btn_seleccionado):
-    funciones_generales.click_boton(btn_seleccionado, botones, COLOR_NORMAL, COLOR_ACTIVO)
-
-    pagina_cuenta = vector_paginas[1]
-    pagina_cuenta.place(x=200, width=800, height=500)
-    funciones_generales.ocultar_pagina(vector_paginas, pagina_cuenta)
-
-    lbl1 = Label(pagina_cuenta, text="Cuenta", font=(fuente, 16, "bold"), background= "gainsboro")
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-#
-#
-#
 #PAGINA EVENTO-------------------------------------------
 def eleccion_paginaEvento(vector_paginas, app_MenuOrg, botones, btn_seleccionado, id_organizador):
     if(verificar_Ubicaciones_Categorias_Evento() == False):
@@ -1092,33 +1079,31 @@ def creacionPantalla_MenuOrganizador2(app, _fuente, nombreUsuario, id_organizado
     btn_principal = Button(app_MenuOrg, text="MENU PRINCIPAL", relief="flat")
     botones.append(btn_principal)
     btn_principal.place(x=20, y=70, width=160, height=30)
-    #BOTON GESTIONAR CUENTA 
+    #BOTON GESTIONAR CUENTA (FUNCION ELIMINADA PERO LO DEJO PARA NO AFECTAR AL VECTOR DE BOTONES)
     btn_cuenta = Button(app_MenuOrg, text="CUENTA", relief="flat" )
     botones.append(btn_cuenta)
-    btn_cuenta.place(x=20, y=100, width=160, height=30)
     #BOTON GESTIONAR CATEGORIAS
     btn_categorias = Button(app_MenuOrg, text="CATEGORIAS", relief="flat" )
     botones.append(btn_categorias)
-    btn_categorias.place(x=20, y=130, width=160, height=30)
+    btn_categorias.place(x=20, y=100, width=160, height=30)
     #BOTON GESTIONAR UBICACIONES
     btn_ubicaciones = Button(app_MenuOrg, text="UBICACIONES", relief="flat" )
     botones.append(btn_ubicaciones)
-    btn_ubicaciones.place(x=20, y=160, width=160, height=30)
+    btn_ubicaciones.place(x=20, y=130, width=160, height=30)
     #BOTON GESTIONAR EVENTO
     btn_evento = Button(app_MenuOrg, text="EVENTOS", relief="flat")
     botones.append(btn_evento)
-    btn_evento.place(x=20, y=190, width=160, height=30)
+    btn_evento.place(x=20, y=160, width=160, height=30)
     #BOTON GESTIONAR ENTRADAS 
     btn_entradas = Button(app_MenuOrg, text="ENTRADAS", relief="flat")
     botones.append(btn_entradas)
-    btn_entradas.place(x=20, y=220, width=160, height=30)
+    btn_entradas.place(x=20, y=190, width=160, height=30)
     #BOTON GESTIONAR NOTIFICACIONES 
     btn_notificaciones = Button(app_MenuOrg, text="NOTIFICACIONES", relief="flat")
     botones.append(btn_notificaciones)
-    btn_notificaciones.place(x=20, y=250, width=160, height=30)
+    btn_notificaciones.place(x=20, y=220, width=160, height=30)
     #SE ASIGNAS LAS FUNCIONES A LOS BOTONES YA CREADOS
     btn_principal.config(command=partial(mostrar_pagina_menuPrincipal,vector_paginas, app_MenuOrg, botones, 0, id_organizador))
-    btn_cuenta.config(command=partial(mostrar_pagina_cuenta, vector_paginas, app_MenuOrg, botones, 1))
     btn_categorias.config(command=partial(mostrar_pagina_categorias, vector_paginas, app_MenuOrg, botones, 2))
     btn_ubicaciones.config(command=partial(mostrar_pagina_ubicaciones, vector_paginas, app_MenuOrg, botones, 3))
     btn_evento.config(command=partial(eleccion_paginaEvento,vector_paginas, app_MenuOrg, botones, 4, id_organizador))

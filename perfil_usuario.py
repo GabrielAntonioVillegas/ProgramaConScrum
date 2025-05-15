@@ -8,6 +8,7 @@ import funciones_generales
 import panel_administracion
 from tkcalendar import DateEntry
 from datetime import datetime
+import pagina_cuenta
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 asiento_seleccionado = None
 boton_seleccionado = None
@@ -210,8 +211,12 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     pagina_carrito=Frame(app_MenuUs, bg="gainsboro")
     pagina_carrito.place(x=200, width=800, height=500)
 
+    #Pagina cuenta
+    pagina_cuenta=Frame(app_MenuUs, bg="gainsboro")
+    pagina_carrito.place(x=200, width=800, height=500)
+
     #Completar vector paginas
-    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito]
+    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuenta]
 
     for i in range(len(vector_paginas)):
         if vector_paginas[i] != panel2:
@@ -223,17 +228,20 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
 
     #COMPONENTES PARA EL PANEL 1
 
-    btn_principal = Button(app_MenuUs, text="Menu Principal", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
+    btn_principal = Button(app_MenuUs, text="MENU PRINCIPAL", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
     btn_principal.place(x=20, y=70, width=160, height=30)
-    
-    btn_buscar = Button(app_MenuUs, text="Buscar Eventos", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas, id_usuario))
-    btn_buscar.place(x=20, y=100, width=160, height=30)
-    
-    btn_favoritos = Button(app_MenuUs, text="Favoritos", relief="flat", command=partial(mostrar_pagina_favoritos, app, vector_paginas, id_usuario))
-    btn_favoritos.place(x=20, y=130, width=160, height=30)
 
-    btn_carrito = Button(app_MenuUs, text="Carrito", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
-    btn_carrito.place(x=20, y=160, width=160, height=30)
+    btn_cuenta = Button(app_MenuUs, text="CUENTA", relief="flat", command=partial(pagina_cuenta.mostrar_pagina_cuenta,app,vector_paginas,id_usuario))
+    btn_cuenta.place(x=20, y=100, width=160, height=30)
+    
+    btn_buscar = Button(app_MenuUs, text="BUSCAR EVENTOS", relief="flat", command=partial(mostrar_pagina_buscar, app, vector_paginas, id_usuario))
+    btn_buscar.place(x=20, y=130, width=160, height=30)
+    
+    btn_favoritos = Button(app_MenuUs, text="FAVORITOS", relief="flat", command=partial(mostrar_pagina_favoritos, app, vector_paginas, id_usuario))
+    btn_favoritos.place(x=20, y=160, width=160, height=30)
+
+    btn_carrito = Button(app_MenuUs, text="CARRITO", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
+    btn_carrito.place(x=20, y=190, width=160, height=30)
 
     #COMPONENTES PARA EL PANEL 2 (pagina principal) 
     
@@ -433,6 +441,7 @@ def mostrar_pagina_carrito(vector_paginas):
 
     lbl1=Label(pagina_carrito,text="Carrito de compras", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
 
 #====================================[EVENTOS Y FAVORITOS]
 #--------------------Crear Ventana Detalles Evento
