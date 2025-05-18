@@ -1,3 +1,4 @@
+import textwrap
 from tkinter import BooleanVar
 import tkinter as tk
 from tkinter.ttk import Checkbutton, Combobox
@@ -147,28 +148,52 @@ def mostrar_pagina_principal(vector_paginas, nombreUsuario):
 
     lbl2=Label(pagina_principal, text="Notificaciones", background="gainsboro", font = (fuente, 16, "bold"))
     lbl2.place(relx=0.5, y=60, anchor="center", relwidth=1, height=30)
-    # Crear un Treeview
-    treeview_frame = tk.Frame(pagina_principal)
-    treeview_frame.place(relx=0.5, rely=0.5, anchor="center")
+    # Crear un Treeview con scrollbar
 
-    tree = ttk.Treeview(treeview_frame, columns=("Fecha", "Descripción"), show="headings")
-    tree.heading("Fecha", text="Fecha")
-    tree.heading("Descripción", text="Descripción")
-    tree.column("Fecha",width=120)
-    tree.column("Descripción", width=500)
-    tree.pack(fill=tk.BOTH, expand=True)
 
-    # Obtener las notificaciones de la base de datos
+
+    frame_canvas = tk.Frame(pagina_principal, width=600, height=400)
+    frame_canvas.place(relx=0.5, rely=0.5, anchor="center")
+
+    # Canvas para hacer scroll
+    canvas = tk.Canvas(frame_canvas, width=600, height=300)
+    canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    # Scrollbar vertical
+    scrollbar = tk.Scrollbar(frame_canvas, orient="vertical", command=canvas.yview)
+    scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+
+    canvas.configure(yscrollcommand=scrollbar.set)
+
+    # Frame interno dentro del canvas donde pondremos las notificaciones
+    frame_interno = tk.Frame(canvas, background="white")
+    canvas.create_window((0, 0), window=frame_interno, anchor="nw")
+
+    # Obtener las notificaciones
     notificaciones = obtener_notificaciones()
 
     if notificaciones:
-        # Insertar los resultados en el Treeview
-        for noti in notificaciones:
-            # Aquí no es necesario usar strptime porque noti[0] ya es un objeto datetime
-            fecha_formateada = noti[0].strftime('%d-%m-%Y %H:%M:%S')
-            tree.insert("", "end", values=(fecha_formateada, noti[1]))
+        for i, noti in enumerate(notificaciones):
+            fecha = noti[0]
+            descripcion = str(noti[1])
+            fecha_formateada = fecha.strftime('%d-%m-%Y %H:%M:%S')
+
+            # Etiqueta para la fecha
+            lbl_fecha = tk.Label(frame_interno, text=fecha_formateada, font=(fuente, 12, "bold"), anchor="w", background="white")
+            lbl_fecha.grid(row=2*i, column=0, sticky="w", padx=10, pady=(10,0))
+
+            # Etiqueta para la descripción (multilinea)
+            lbl_desc = tk.Label(frame_interno, text=descripcion, font=(fuente, 11), wraplength=595, justify="left", background="white")
+            lbl_desc.grid(row=2*i + 1, column=0, sticky="w", padx=10, pady=(0,10))
     else:
-        tree.insert("","end",values=("","No hay notificaciones disponibles"))
+        lbl_no = tk.Label(frame_interno, text="No hay notificaciones disponibles", font=(fuente, 12), background="white")
+        lbl_no.pack(padx=10, pady=10)
+
+    # Actualizar scrollregion cuando cambie el tamaño del frame_interno
+    def on_frame_configure(event):
+        canvas.configure(scrollregion=canvas.bbox("all"))
+
+    frame_interno.bind("<Configure>", on_frame_configure)
 #--------------------Pantalla Menu Usuario
 def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
 
@@ -383,7 +408,7 @@ def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
     btn_buscar = Button(pagina_buscar, text="🔍", font=(fuente,13), relief="flat", command=partial(busquedaEvento, app, lista, ent_buscar, cmb_categorias, cmb_ubicaciones, dateEntry_fecha, estado_boton_fechas))
     btn_buscar.config(state="disabled")
     btn_buscar.place(x=550, y=50, height=30, width=50)
-#--------------------Mostrar pagina notificaciones
+#--------------------Mostrar pagina Favoritos
 def mostrar_pagina_favoritos(app,vector_paginas,id_usuario):
     pagina_favoritos = vector_paginas[2]
     pagina_favoritos.place(x=200, width=800, height=500)
@@ -662,7 +687,6 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
             pass
 #--------------------Agregar entrada seleccionada al carrito
 def agregar_al_carrito(asiento_seleccionado, id_entrada, id_usuario, cantidad, cupo, tiene_asiento):
-    print(asiento_seleccionado)
 
     #VALIDAR QUE SIEMPRE ESTE SELECCIONADO UN ASIENTO O CANTIDAD DE ENTRADAS
     if (tiene_asiento and asiento_seleccionado==None):
