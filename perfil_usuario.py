@@ -137,11 +137,16 @@ def creacionPantalla_Registrarse(app,fuente):
 
     app.withdraw()
 #--------------------Pantalla Principal de Usuario
-def mostrar_pagina_principal(vector_paginas):
+def mostrar_pagina_principal(vector_paginas, nombreUsuario):
     pagina_principal = vector_paginas[0]
     pagina_principal.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_principal)
 
+    lbl1=Label(pagina_principal,text="¡Bienvenido/a "+nombreUsuario+"!", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    lbl2=Label(pagina_principal, text="Notificaciones", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl2.place(relx=0.5, y=60, anchor="center", relwidth=1, height=30)
     # Crear un Treeview
     treeview_frame = tk.Frame(pagina_principal)
     treeview_frame.place(relx=0.5, rely=0.5, anchor="center")
@@ -163,7 +168,7 @@ def mostrar_pagina_principal(vector_paginas):
             fecha_formateada = noti[0].strftime('%d-%m-%Y %H:%M:%S')
             tree.insert("", "end", values=(fecha_formateada, noti[1]))
     else:
-        messagebox.showinfo("Sin notificaciones", "No hay notificaciones para mostrar.")
+        tree.insert("","end",values=("","No hay notificaciones disponibles"))
 #--------------------Pantalla Menu Usuario
 def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
 
@@ -199,6 +204,10 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     panel2 = Frame(app_MenuUs, bg="gainsboro")
     panel2.place(x=200, width=800, height=500)
 
+    #Pagina principal
+    pagina_principal = Frame(app_MenuUs, bg="gainsboro")
+    pagina_principal.place(x=200, width=800, height=500)
+
     #Pagina buscar eventos
     pagina_buscar = Frame(app_MenuUs, bg="gainsboro")
     pagina_buscar.place(x=200, width=800, height=500)
@@ -216,10 +225,10 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     pagina_carrito.place(x=200, width=800, height=500)
 
     #Completar vector paginas
-    vector_paginas=[panel2,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuentaa]
+    vector_paginas=[pagina_principal,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuentaa]
 
     for i in range(len(vector_paginas)):
-        if vector_paginas[i] != panel2:
+        if vector_paginas[i] != pagina_principal:
             vector_paginas[i].place_forget()
 
     #BOTON VOLVER
@@ -228,7 +237,7 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
 
     #COMPONENTES PARA EL PANEL 1
 
-    btn_principal = Button(app_MenuUs, text="MENU PRINCIPAL", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas))
+    btn_principal = Button(app_MenuUs, text="MENU PRINCIPAL", relief="flat", command=partial(mostrar_pagina_principal,vector_paginas, nombreUsuario))
     btn_principal.place(x=20, y=70, width=160, height=30)
 
     btn_cuenta = Button(app_MenuUs, text="CUENTA", relief="flat", command=partial(pagina_cuenta.mostrar_pagina_cuenta,app,vector_paginas,id_usuario))
@@ -243,10 +252,9 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     btn_carrito = Button(app_MenuUs, text="CARRITO", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
     btn_carrito.place(x=20, y=190, width=160, height=30)
 
-    #COMPONENTES PARA EL PANEL 2 (pagina principal) 
-    
-    lbl1 = Label(panel2, text=("¡Bienvenido/a "+nombreUsuario+"!"), bg = "gainsboro", font=(fuente, 16, "bold"))
-    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+    #componentes para el panel2
+
+    mostrar_pagina_principal(vector_paginas, nombreUsuario)
 #--------------------Mostrar pagina buscar
 def mostrar_pagina_buscar(app,vector_paginas, id_usuario):
 
@@ -441,8 +449,6 @@ def mostrar_pagina_carrito(vector_paginas):
 
     lbl1=Label(pagina_carrito,text="Carrito de compras", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
-
-
 #====================================[EVENTOS Y FAVORITOS]
 #--------------------Crear Ventana Detalles Evento
 def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
@@ -468,8 +474,13 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
     ventanaDetalles = tk.Toplevel(app)
     ventanaDetalles.title("Detalles del evento")
     ventanaDetalles.protocol("WM_DELETE_WINDOW", cerrar_ventana_detalle) #que hacer cuando se cierra la ventana manualmente
-    centrarPantalla(600,700,ventanaDetalles)
+    centrarPantalla(800,400,ventanaDetalles)
     ventanaDetalles.resizable(False,False)
+    panel1 = Frame(ventanaDetalles, bg="lightgray")
+    panel1.place(x=0, width=400, height=400)
+    #PANEL 2 (derecha, el mas ancho)
+    panel2 = Frame(ventanaDetalles, bg="gainsboro")
+    panel2.place(x=400, width=400, height=400)
 
     try:
         conexion = iniciarConexion(vectorConexion)
@@ -494,11 +505,11 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
 
         direccion = valores[2]
 
-        lbl_titulo = Label(ventanaDetalles, text=("Titulo del evento: "+titulo), font = (fuente, 10))
-        lbl_titulo.place(relx=0.5, y=20, anchor="center")
+        lbl_titulo = Label(panel1, text=("Titulo del evento: "+titulo), font = (fuente, 10), bg="lightgray")
+        lbl_titulo.place(relx=0.5, y=40, anchor="center")
 
-        lbl_descripcion = Label(ventanaDetalles, text=("Descripcion: "+descripcion), wraplength=400, font = (fuente,10))
-        lbl_descripcion.place(relx=0.5, y=40, anchor="center")
+        lbl_descripcion = Label(panel1, text=("Descripcion: "+descripcion), wraplength=100, font = (fuente,10), bg="lightgray")
+        lbl_descripcion.place(relx=0.5, y=80, anchor="center")
         
         #OBTENER NOMBRE DE LA CATEGORIA
         consulta = ("SELECT nombre FROM Categoria WHERE id_categoria = %s")
@@ -508,12 +519,12 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
 
         categoria = resultado[0]
 
-        lbl_categoria = Label(ventanaDetalles, text=("Categoria: "+categoria), font=(fuente, 10))
-        lbl_categoria.place(relx=0.5, y=130, anchor="center")
+        lbl_categoria = Label(panel1, text=("Categoria: "+categoria), font=(fuente, 10), bg="lightgray")
+        lbl_categoria.place(relx=0.5, y=180, anchor="center")
 
-        lbl_fecha = Label(ventanaDetalles, font=(fuente,10))
-        lbl_año = Label(ventanaDetalles, text=("Año: "+fecha_inicio[6:10]), font=(fuente,10))
-        lbl_año.place(relx=0.5, y=150, anchor="center")
+        lbl_fecha = Label(panel1, font=(fuente,10), bg="lightgray")
+        lbl_año = Label(panel1, text=("Año: "+fecha_inicio[6:10]), font=(fuente,10), bg="lightgray")
+        lbl_año.place(relx=0.5, y=210, anchor="center")
 
         if (fecha_inicio == fecha_fin):
             lbl_fecha.configure(text=("Fecha: "+fecha_inicio[0:5]+" a las "+fecha_inicio[11:]+"hs"))
@@ -522,14 +533,14 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
         elif (fecha_inicio != fecha_fin):
             lbl_fecha.configure(text=("Fecha: Desde el "+fecha_inicio[0:5]+" a las "+fecha_inicio[11:]+"hs hasta el "+fecha_fin[0:5]+" a las "+fecha_fin[11:]+"hs"))
 
-        lbl_fecha.place(relx=0.5, y=170, anchor="center")
+        lbl_fecha.place(relx=0.5, y=240, anchor="center")
 
-        lbl_direccion = Label(ventanaDetalles, text="Direccion: "+direccion, font=(fuente,10))
-        lbl_direccion.place(relx=0.5, y=190, anchor="center")
+        lbl_direccion = Label(panel1, text="Direccion: "+direccion, font=(fuente,10), bg="lightgray")
+        lbl_direccion.place(relx=0.5, y=270, anchor="center")
 
 
-        btn_favorito = Button(ventanaDetalles, text="Agregar categoria a favoritos", wraplength=120, font=(fuente,10), command=partial(agregar_favorito, id_categoria, id_usuario))
-        btn_favorito.place(relx=0.5, y=240, anchor="center")
+        btn_favorito = Button(panel1, text="Agregar categoria a favoritos", wraplength=120, font=(fuente,10), command=partial(agregar_favorito, id_categoria, id_usuario))
+        btn_favorito.place(relx=0.5, y=360, anchor="center")
 
         def cargar_entradas(id_evento):
             try:
@@ -556,21 +567,25 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                 except:
                     pass
         
-        lbl_estado = Label(ventanaDetalles, text="Estado: "+estado, font=(fuente,10))
-        lbl_estado.place(relx=0.5, y=290, anchor="center")
+        lbl_estado = Label(panel1, text="Estado: "+estado, font=(fuente,10), bg="lightgray")
+        lbl_estado.place(relx=0.5, y=300, anchor="center")
         if estado=="activo":
-            lbl_entradas = Label(ventanaDetalles, text="Entradas: ", font = (fuente, 10))
-            lbl_entradas.place(relx=0.5, y=330, anchor="center")
-            cmb_entradas = Combobox(ventanaDetalles,font=(fuente,10), state="readonly")
-            cmb_entradas.place(relx=0.5, y=360, anchor="center")
+            lbl_entradas = Label(panel2, text="Entradas: ", font = (fuente, 10), bg="gainsboro")
+            lbl_entradas.place(relx=0.5, y=40, anchor="center")
+            cmb_entradas = Combobox(panel2,font=(fuente,10), state="readonly")
+            cmb_entradas.place(relx=0.5, y=80, anchor="center")
             vector_entradas = cargar_entradas(id_evento)
             if vector_entradas:
                 cmb_entradas["values"]=vector_entradas
                 cmb_entradas.current(0)
-                frame_grilla = Frame(ventanaDetalles)
-                frame_grilla.place(relx=0.5, y=550,anchor="center")
-                lbl_cupo=Label(ventanaDetalles)
+                frame_grilla = Frame(panel2)
+                frame_grilla.place(relx=0.5, y=245,anchor="center")
+                lbl_cupo=Label(panel2, bg="gainsboro")
+                ent_cantidad=Entry(panel2,font=(fuente,10))
+                btn_agregar_carrito = Button(panel2,text="Agregar al carrito", font = (fuente,10))
                 def cargar_asientos_cb():
+                    global asiento_seleccionado, boton_seleccionado
+
                     tipo_entrada = cmb_entradas.get()
                     if not tipo_entrada:
                         messagebox.showerror("Error", "Seleccioná un tipo de entrada")
@@ -586,19 +601,34 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                         for widget in frame_grilla.winfo_children():
                             widget.destroy()
 
+                        asiento_seleccionado = None
+                        boton_seleccionado = None
+
                         if resultado:
                             id_entrada, tiene_asientos = resultado[0]
                             if tiene_asientos:
                                 lbl_cupo.place_forget()
+                                ent_cantidad.place_forget()
+                                btn_agregar_carrito.place_forget()
+                                frame_grilla.place(relx=0.5, y=245,anchor="center")
                                 cargar_grilla_asientos(frame_grilla, id_entrada)
+                                btn_agregar_carrito.place(relx=0.5, y=370, anchor="center")
+                                tiene_o_no=True
+                                btn_agregar_carrito.configure(command=lambda: agregar_al_carrito(asiento_seleccionado, id_entrada, id_usuario, ent_cantidad.get(), 10, tiene_o_no))
+                                #Ese 10 de los parametros deberia ser el cupo pero como esa variable esta definida arriba y siempre que haya un asiento seleccionado la "cantidad" va a ser 1, paso cupo como 10, un poquito de hardcodeo
                             else:
                                 frame_grilla.place_forget()
+                                btn_agregar_carrito.place_forget()
                                 #ACA VA SI NO TIENE ASIENTOS
                                 consulta=("SELECT cupo_disponible FROM Entrada WHERE id_entrada = %s")
                                 cursor.execute(consulta, (id_entrada,))
                                 cupo = cursor.fetchall()
                                 lbl_cupo.configure(font=(fuente,10), text=("Disponibles: "+str(cupo[0][0])))
-                                lbl_cupo.place(relx=0.5, y=550, anchor="center")
+                                lbl_cupo.place(relx=0.5, y=160, anchor="center")
+                                ent_cantidad.place(relx=0.5, y=200, anchor="center")
+                                btn_agregar_carrito.place(relx=0.5, y=240, anchor="center")
+                                tiene_o_no=False
+                                btn_agregar_carrito.configure(command=lambda: agregar_al_carrito(asiento_seleccionado, id_entrada, id_usuario, ent_cantidad.get(), cupo[0][0], tiene_o_no))
                         else:
                             messagebox.showerror("Error", "Entrada no encontrada")
 
@@ -612,8 +642,8 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
                         except:
                             pass
 
-                btn_cargar = Button(ventanaDetalles, text="Cargar entradas", command=cargar_asientos_cb)
-                btn_cargar.place(relx=0.5, y=400, anchor="center")
+                btn_cargar = Button(panel2, text="Cargar entradas", command=cargar_asientos_cb)
+                btn_cargar.place(relx=0.5, y=120, anchor="center")
                 
             else:
                 cmb_entradas.place_forget()
@@ -624,6 +654,85 @@ def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):
         print(e)
         messagebox.showerror(title="Error", message="Ups! Parece que algo salió mal")
 
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
+#--------------------Agregar entrada seleccionada al carrito
+def agregar_al_carrito(asiento_seleccionado, id_entrada, id_usuario, cantidad, cupo, tiene_asiento):
+    print(asiento_seleccionado)
+
+    #VALIDAR QUE SIEMPRE ESTE SELECCIONADO UN ASIENTO O CANTIDAD DE ENTRADAS
+    if (tiene_asiento and asiento_seleccionado==None):
+        messagebox.showerror(title="Error", message="Por favor seleccione un asiento")
+        return
+    elif (not tiene_asiento):
+        if (cantidad==""):
+            messagebox.showerror(title="Error", message="Por favor complete el campo")
+            return
+        elif (int(cantidad)>4 or int(cantidad)>cupo or int(cantidad)<=0):
+            messagebox.showerror(title="Error", message="Solo puede añadir entre 1 y 4 entradas por vez al carrito (mientras haya cupo disponible)")
+            return    
+
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor=conexion.cursor()
+        consulta="SELECT * FROM Carrito WHERE UsuarioID = %s AND estado='abierto'"
+        cursor.execute(consulta, (id_usuario,))
+        resultados=cursor.fetchall()
+        #SI NO EXISTE UN CARRITO ABIERTO SE CREA UNO PARA EL USUARIO
+        if not resultados:
+            consulta="INSERT INTO Carrito (UsuarioID, estado) VALUES(%s, 'abierto')"
+            cursor.execute(consulta, (id_usuario,))
+            conexion.commit()
+
+        #GUARDAR ID DEL CARRITO DEL USUARIO
+        consulta="SELECT id_carrito FROM Carrito WHERE UsuarioID = %s AND estado='abierto'"
+        cursor.execute(consulta, (id_usuario,))
+        id_carrito=cursor.fetchall()[0][0]
+        
+        #GUARDAR ENTRADA/ASIENTO(DE SER POSIBLE) EN EL CARRITO
+        consulta="INSERT INTO ItemCarrito (id_carrito, id_entrada, cantidad, id_asiento) VALUES (%s, %s, %s, %s)"
+
+        #VERIFICAR SI LA ENTRADA TIENE ASIENTO O NO (Si no tiene asiento, id_asiento=0)
+
+        #Si la entrada tiene asiento:
+        if (tiene_asiento):
+            consulta_ya_esta_en_carrito="SELECT * FROM ItemCarrito WHERE id_asiento=%s AND id_carrito=%s"
+            cursor.execute(consulta_ya_esta_en_carrito,(asiento_seleccionado, id_carrito,))
+            ya_esta_en_carrito=cursor.fetchall()
+            if ya_esta_en_carrito:
+                messagebox.showerror(title="Error", message="Parece que usted ya tiene este asiento en su carrito de compras")
+            else:
+                cursor.execute(consulta, (id_carrito, id_entrada, 1, asiento_seleccionado))
+                conexion.commit()
+                messagebox.showinfo(title="Éxito", message="Entrada guardada en el carrito con éxito")
+        
+        #Si NO tiene asiento:
+        else:
+            #Preguntar si ya hay alguna entrada de ese tipo en el carrito del usuario
+            consultar_entrada_en_carrito="SELECT * FROM ItemCarrito WHERE id_entrada=%s AND id_carrito=%s AND id_asiento=0"
+            cursor.execute(consultar_entrada_en_carrito, (id_entrada, id_carrito,))
+            entrada_existente=cursor.fetchall()
+            #si ya hay una entrada de ese tipo, se suma la cantidad comprada
+            if entrada_existente:
+                consulta_agregar_cantidad_entrada="UPDATE ItemCarrito SET cantidad=cantidad+%s WHERE id_entrada=%s AND id_carrito=%s AND id_asiento=0"
+                cursor.execute(consulta_agregar_cantidad_entrada, (cantidad, id_entrada, id_carrito,))
+                
+            else:
+                cursor.execute(consulta, (id_carrito, id_entrada, cantidad, 0))
+        
+            conexion.commit()
+            messagebox.showinfo(title="Éxito", message="Entrada guardada en el carrito con éxito")
+
+        #DESCONTAR DEL STOCK SE REALIZARA CON EL PROCESAMIENTO DE LA COMPRA
+
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error",message="Ups! Parece que hubo un error al agregar tu entrada al carrito")
     finally:
         try:
             conexion.close()
@@ -892,12 +1001,11 @@ def obtener_notificaciones():
             conexion.close()
         except:
             pass
-
 #====================================[SELECCION DE ASIENTOS]
 #--------------------Seleccion de asiento
 def seleccionar_asiento(id_asiento, boton):
     global asiento_seleccionado, boton_seleccionado
-
+    
     # Restaurar el color del botón anterior si lo había
     if boton_seleccionado:
         boton_seleccionado.configure(bg="green")
@@ -911,6 +1019,9 @@ def seleccionar_asiento(id_asiento, boton):
 #--------------------CARGAR GRILLA ASIENTOS
 def cargar_grilla_asientos(frame, entrada_id):
     global asiento_seleccionado, boton_seleccionado
+
+    asiento_seleccionado = None
+    boton_seleccionado = None
 
     for widget in frame.winfo_children():
         widget.destroy()
@@ -965,8 +1076,6 @@ def cargar_grilla_asientos(frame, entrada_id):
             conexion.close()
         except:
             pass
-
-
 #====================================[BASE DE DATOS]
 def iniciarConexion(vectorConexion):
     conexion = mysql.connector.connect(

@@ -1,3 +1,4 @@
+from tkinter import *
 vectorConexion = ["boznowy5qzijb8uhhqoj-mysql.services.clever-cloud.com","u1s6xofortb1nhmx","TIjcUe5NAXwsr8Rtu8U8","boznowy5qzijb8uhhqoj"]
 
 #--------------------Centrar Pantalla
@@ -27,3 +28,5 @@ def mostrar_pagina_cuenta(app,vector_paginas,id_usuario):
     pagina_cuenta.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_cuenta)
 
+    lbl1=Label(pagina_cuenta,text="Cuenta", background="gainsboro", font = ("Source Code Pro", 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
