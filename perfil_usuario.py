@@ -249,8 +249,12 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     pagina_cuentaa=Frame(app_MenuUs, bg="gainsboro")
     pagina_carrito.place(x=200, width=800, height=500)
 
+    #Pagina historial de compras
+    pagina_compras=Frame(app_MenuUs, bg="gainsboro")
+    pagina_compras.place(x=200, width=800, height=500)
+
     #Completar vector paginas
-    vector_paginas=[pagina_principal,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuentaa]
+    vector_paginas=[pagina_principal,pagina_buscar,pagina_favoritos, pagina_carrito, pagina_cuentaa, pagina_compras]
 
     for i in range(len(vector_paginas)):
         if vector_paginas[i] != pagina_principal:
@@ -274,9 +278,11 @@ def creacionPantalla_MenuUsuario(app,_fuente,nombreUsuario):
     btn_favoritos = Button(app_MenuUs, text="FAVORITOS", relief="flat", command=partial(mostrar_pagina_favoritos, app, vector_paginas, id_usuario))
     btn_favoritos.place(x=20, y=160, width=160, height=30)
 
-    btn_carrito = Button(app_MenuUs, text="CARRITO", relief="flat", command=partial(mostrar_pagina_carrito, vector_paginas))
+    btn_carrito = Button(app_MenuUs, text="CARRITO", relief="flat", command=partial(mostrar_pagina_carrito, app, vector_paginas, id_usuario))
     btn_carrito.place(x=20, y=190, width=160, height=30)
 
+    btn_compras = Button(app_MenuUs, text="HISTORIAL DE COMPRAS", relief="flat", command=partial(mostrar_pagina_compras, app, vector_paginas, id_usuario))
+    btn_compras.place(x=20, y=220, width=160, height=30)
     #componentes para el panel2
 
     mostrar_pagina_principal(vector_paginas, nombreUsuario)
@@ -467,13 +473,401 @@ def mostrar_pagina_favoritos(app,vector_paginas,id_usuario):
     btn_eliminar = Button(pagina_favoritos, text="Eliminar de favoritos", wraplength=100,command=partial(eliminar_favoritos, lista, id_usuario, app, vector_paginas))
     btn_eliminar.place(relx=0.5, y=400, anchor = "center")
 #--------------------Mostrar pagina carrito
-def mostrar_pagina_carrito(vector_paginas):
+def mostrar_pagina_carrito(app,vector_paginas,id_usuario):
     pagina_carrito = vector_paginas[3]
     pagina_carrito.place(x=200, width=800, height=500)
     ocultar_pagina(vector_paginas, pagina_carrito)
 
     lbl1=Label(pagina_carrito,text="Carrito de compras", background="gainsboro", font = (fuente, 16, "bold"))
     lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    # Frame que contendrá Treeview y scrollbar
+    contenedor = Frame(pagina_carrito)
+    contenedor.place(relx=0.5, y=200, anchor="center", relwidth=0.5, height=300)
+
+    # Scrollbar vertical
+    scrollbar = Scrollbar(contenedor, orient="vertical")
+    scrollbar.pack(side="right", fill="y")
+
+    # Treeview con columnas y vinculado al scrollbar
+    lista = Treeview(contenedor, columns=("Evento:", "Entrada:", "Asiento:", "Cantidad:", "id_entrada", "id_asiento"),
+                 show="headings", yscrollcommand=scrollbar.set)
+    lista.pack(side="left", fill="both", expand=True)
+
+    scrollbar.config(command=lista.yview)
+
+    for col in ("Evento:", "Entrada:", "Asiento:", "Cantidad:"):
+        lista.heading(col, text=col)
+        lista.column(col, width=100, anchor="center")
+    
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor=conexion.cursor()
+        consulta = """SELECT 
+                ev.titulo AS evento,
+                en.tipo AS entrada,
+                CASE 
+                    WHEN a.fila IS NULL OR a.columna IS NULL THEN ''
+                    ELSE CONCAT('F', a.fila, '-C', a.columna)
+                END AS asiento,
+                ic.cantidad,
+                en.id_entrada,
+                ic.id_asiento
+              FROM Carrito c
+              JOIN ItemCarrito ic ON ic.id_carrito = c.id_carrito
+              JOIN Entrada en ON en.id_entrada = ic.id_entrada
+              JOIN Evento ev ON ev.id_evento = en.Evento_id
+              LEFT JOIN Asiento a ON a.id_asiento = ic.id_asiento AND ic.id_asiento <> 0
+              WHERE c.UsuarioID = %s AND c.estado = 'abierto'"""
+
+        cursor.execute(consulta, (id_usuario,))
+        filas = cursor.fetchall()
+
+        # Limpiar lista antes de cargar nueva info
+        for item in lista.get_children():
+            lista.delete(item)
+
+        for fila in filas:
+            lista.insert("", "end", values=fila)
+    
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que no pudimos cargar tu carrito")
+    
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
+    
+    btn_quitar=Button(pagina_carrito, text="Quitar", command=partial(quitar_entrada,lista, id_usuario, app, vector_paginas))
+    btn_quitar.place(relx=0.5, y=380,anchor="center", width=100, height=40)
+
+    btn_pagar=Button(pagina_carrito, text="Pagar", command=partial(procesar_pago, app, id_usuario, lista))
+    btn_pagar.place(relx=0.5, y=430, anchor="center", width=100, height=40)
+#--------------------Quitar entrada del carrito
+def quitar_entrada(lista, id_usuario, app, vector_paginas):
+    seleccion = lista.selection()
+    if not seleccion:
+        messagebox.showwarning("Atención", "Seleccioná una entrada para quitar.")
+        return
+    
+    item = lista.item(seleccion)
+    valores = item['values']
+
+    id_entrada = valores[4]
+    id_asiento = valores[5]
+
+    try:
+        conexion = iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+        consulta = """SELECT cantidad 
+                    FROM ItemCarrito 
+                    WHERE id_carrito = (SELECT id_carrito FROM Carrito WHERE UsuarioID = %s AND estado = 'abierto')
+                    AND id_entrada = %s AND id_asiento = %s"""
+        # Obtener cantidad actual
+        cursor.execute(consulta, (id_usuario, id_entrada, id_asiento,))
+        resultado = cursor.fetchone()
+
+        if resultado:
+            cantidad_actual = resultado[0]
+            if cantidad_actual > 1:
+                cursor.execute("""
+                    UPDATE ItemCarrito
+                    SET cantidad = cantidad - 1
+                    WHERE id_carrito = (SELECT id_carrito FROM Carrito WHERE UsuarioID = %s AND estado = 'abierto')
+                      AND id_entrada = %s AND id_asiento = %s
+                """, (id_usuario, id_entrada, id_asiento,))
+                messagebox.showinfo(title="Exito", message="Eliminaste una entrada de tu carrito con éxito")
+            else:
+                cursor.execute("""
+                    DELETE FROM ItemCarrito
+                    WHERE id_carrito = (SELECT id_carrito FROM Carrito WHERE UsuarioID = %s AND estado = 'abierto')
+                      AND id_entrada = %s AND id_asiento = %s
+                """, (id_usuario, id_entrada, id_asiento,))
+                messagebox.showinfo(title="Exito", message="Eliminaste la entrada de tu carrito con éxito")
+
+            conexion.commit()
+            mostrar_pagina_carrito(app, vector_paginas, id_usuario)  # Recargar
+        else:
+            messagebox.showerror("Error", "No se encontró el ítem seleccionado.")
+    except Exception as e:
+        print(e)
+        messagebox.showerror("Error", "No se pudo quitar la entrada.")
+    finally:
+        try:
+            cursor.close()
+            conexion.close()
+        except:
+            pass
+#--------------------Verificar validez de tarjeta (mediante algoritmo de luhn)
+def luhn_valido(numero):
+    digitos = [int(d) for d in str(numero)][::-1]
+    total = 0
+    for i, d in enumerate(digitos):
+        if i % 2 == 1:
+            d *= 2
+            if d > 9:
+                d -= 9
+        total += d
+    return total % 10 == 0
+#--------------------Validar fecha de vencimiento
+def validar_fecha(fecha_str):
+    try:
+        fecha = datetime.strptime(fecha_str, "%d/%m/%Y")
+        return fecha > datetime.now()
+    except:
+        return False
+#--------------------Procesar pago (pasarela de pagos)
+def procesar_pago(app, id_usuario, lista):
+    if not lista.get_children():
+        messagebox.showerror(title="Error", message="No tienes entrada en tu carrito")
+        return
+    pasarela = tk.Toplevel(app)
+    pasarela.title("Pasarela de pagos")
+    pasarela.protocol("WM_DELETE_WINDOW", pasarela.destroy)
+    centrarPantalla(600, 500, pasarela)
+    pasarela.resizable(False, False)
+
+    contenedor = Frame(pasarela)
+    contenedor.place(relx=0.5, y=100, anchor="center", width=550, height=150)
+
+    scrollbar = Scrollbar(contenedor, orient="vertical")
+    scrollbar.pack(side="right", fill="y")
+
+    lista = Treeview(contenedor, columns=("Evento:", "Entrada:", "Asiento:", "Cantidad:", "Precio:", "Subtotal:"),
+                     show="headings", yscrollcommand=scrollbar.set, selectmode="none")
+    lista.pack(side="left", fill="both", expand=True)
+    scrollbar.config(command=lista.yview)
+
+    for col in ("Evento:", "Entrada:", "Asiento:", "Cantidad:", "Precio:", "Subtotal:"):
+        lista.heading(col, text=col)
+        lista.column(col, anchor="center", width=90)
+
+    total = 0
+    carrito_items = []
+
+    try:
+        conexion = iniciarConexion(vectorConexion)
+        cursor = conexion.cursor()
+
+        consulta = """
+        SELECT 
+            ev.titulo, en.tipo,
+            CASE WHEN a.fila IS NULL OR a.columna IS NULL THEN ''
+                 ELSE CONCAT('F', a.fila, '-C', a.columna) END AS asiento,
+            ic.cantidad, en.precio,
+            (en.precio * ic.cantidad) AS subtotal,
+            en.id_entrada, COALESCE(ic.id_asiento, 0) AS id_asiento
+        FROM Carrito c
+        JOIN ItemCarrito ic ON ic.id_carrito = c.id_carrito
+        JOIN Entrada en ON en.id_entrada = ic.id_entrada
+        JOIN Evento ev ON ev.id_evento = en.Evento_id
+        LEFT JOIN Asiento a ON a.id_asiento = ic.id_asiento AND ic.id_asiento <> 0
+        WHERE c.UsuarioID = %s AND c.estado = 'abierto'
+        """
+        cursor.execute(consulta, (id_usuario,))
+        filas = cursor.fetchall()
+
+        for fila in filas:
+            lista.insert("", "end", values=fila[:6])
+            total += float(fila[5])
+            carrito_items.append(fila)
+
+    except Exception as e:
+        print(e)
+        messagebox.showerror("Error", "No se pudo cargar el carrito.")
+        return
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
+
+    Label(pasarela, text=f"Total: ${total}", font=("Arial", 10, "bold")).place(relx=0.5, y=190, anchor="center")
+
+    # Campos de tarjeta
+    Label(pasarela, text="N° de tarjeta:").place(relx=0.5, anchor="center", y=210)
+    entry_tarjeta = Entry(pasarela, width=30)
+    entry_tarjeta.place(relx=0.5, anchor="center", y=240)
+
+    Label(pasarela, text="Código seguridad (3 dígitos):").place(relx=0.5, anchor="center", y=270)
+    entry_codigo = Entry(pasarela, width=10)
+    entry_codigo.place(relx=0.5, anchor="center", y=300)
+
+    Label(pasarela, text="Fecha de vencimiento (dd/mm/yyyy):").place(relx=0.5, anchor="center", y=330)
+    entry_vencimiento = Entry(pasarela, width=15)
+    entry_vencimiento.place(relx=0.5, anchor="center", y=360)
+
+    def confirmar_pago():
+        tarjeta = entry_tarjeta.get().strip()
+        codigo = entry_codigo.get().strip()
+        vencimiento = entry_vencimiento.get().strip()
+
+        if not (tarjeta.isdigit() and luhn_valido(tarjeta)):
+            return messagebox.showwarning("Error", "Tarjeta inválida.")
+        if not (codigo.isdigit() and len(codigo) == 3):
+            return messagebox.showwarning("Error", "Código inválido.")
+        if not validar_fecha(vencimiento):
+            return messagebox.showwarning("Error", "Fecha de vencimiento inválida.")
+
+        try:
+            conexion = iniciarConexion(vectorConexion)
+            cursor = conexion.cursor()
+            errores = []
+
+            # Verificar disponibilidad
+            for item in carrito_items:
+                cantidad = item[3]
+                id_entrada = item[6]
+                id_asiento = item[7]
+
+                cursor.execute("SELECT cupo_disponible FROM Entrada WHERE id_entrada = %s FOR UPDATE", (id_entrada,))
+                cupo = cursor.fetchone()[0]
+                if cupo < cantidad:
+                    errores.append(f"No hay suficiente cupo para la entrada {item[1]} del evento '{item[0]}'.")
+
+                if id_asiento != 0:
+                    cursor.execute("SELECT disponible FROM Asiento WHERE id_asiento = %s FOR UPDATE", (id_asiento,))
+                    ocupado = cursor.fetchone()[0]
+                    if ocupado == 0:
+                        errores.append(f"El asiento {item[2]} ya está ocupado para el evento '{item[0]}'.")
+
+            if errores:
+                conexion.rollback()
+                messagebox.showerror("Entradas no disponibles", "\n".join(errores))
+                return
+
+            # Insertar en Pedido
+            cursor.execute(
+                "INSERT INTO Pedido (total, estado, UsuarioID) VALUES (%s, %s, %s)",
+                (total, "pagado", id_usuario)
+            )
+            id_pedido = cursor.lastrowid
+
+            # Insertar en DetallePedido
+            for item in carrito_items:
+                id_entrada = item[6]
+                id_asiento = item[7]
+                cantidad = item[3]
+                precio = item[4]
+
+                cursor.execute(
+                    "INSERT INTO DetallePedido (id_pedido, id_entrada, cantidad, precio_unitario, id_asiento) "
+                    "VALUES (%s, %s, %s, %s, %s)",
+                    (id_pedido, id_entrada, cantidad, precio, id_asiento if id_asiento != 0 else None)
+                )
+
+                cursor.execute(
+                    "UPDATE Entrada SET cupo_disponible = cupo_disponible - %s WHERE id_entrada = %s",
+                    (cantidad, id_entrada)
+                )
+
+                if id_asiento != 0:
+                    cursor.execute(
+                        "UPDATE Asiento SET disponible = 0 WHERE id_asiento = %s",
+                        (id_asiento,)
+                    )
+
+            # Cerrar carrito
+            cursor.execute(
+                "UPDATE Carrito SET estado = 'expirado' WHERE UsuarioID = %s AND estado = 'abierto'",
+                (id_usuario,)
+            )
+
+            conexion.commit()
+            messagebox.showinfo("Compra exitosa", "¡Tu compra fue realizada con éxito!")
+            pasarela.destroy()
+
+        except Exception as e:
+            print(e)
+            conexion.rollback()
+            messagebox.showerror("Error", "Error al procesar el pago.")
+        finally:
+            try:
+                conexion.close()
+                cursor.close()
+            except:
+                pass
+
+    Button(pasarela, text="Confirmar pago", command=confirmar_pago).place(relx=0.5, y=400, anchor="center")
+#--------------------Mostrar pagina historial de compras
+def mostrar_pagina_compras(app, vector_paginas,id_usuario):
+    pagina_compras = vector_paginas[3]
+    pagina_compras.place(x=200, width=800, height=500)
+    ocultar_pagina(vector_paginas, pagina_compras)
+
+    lbl1=Label(pagina_compras,text="Historial de compras", background="gainsboro", font = (fuente, 16, "bold"))
+    lbl1.place(relx=0.5, y=15, anchor="center", relwidth=1, height=30)
+
+    def limpiar_seleccion_lista(event):
+        widget_actual = event.widget
+        if not str(widget_actual).startswith(str(lista)):
+            lista.selection_remove(lista.selection())
+    
+    app.bind_all("<Button-1>", limpiar_seleccion_lista)         #Esta linea junto a la funcion de arriba hacen que
+                                                                #Cuando se clickee cualquier parte que no sea
+                                                                #un evento del treeview, se desenfoque
+                                                                #el seleccionado anteriormente
+
+    # Frame que contendrá Treeview y scrollbar
+    contenedor = Frame(pagina_compras)
+    contenedor.place(relx=0.5, y=200, anchor="center", width=600, height=300)
+
+    # Scrollbar vertical
+    scrollbar = Scrollbar(contenedor, orient="vertical")
+    scrollbar.pack(side="right", fill="y")
+
+    # Treeview con columnas y vinculado al scrollbar
+    lista = Treeview(contenedor, columns=("Fecha:","Evento:", "Entrada:", "Asiento:", "Cantidad:"), show="headings",
+                    yscrollcommand=scrollbar.set)
+    lista.pack(side="left", fill="both", expand=True)
+
+    scrollbar.config(command=lista.yview)
+
+    for col in ("Fecha:","Evento:", "Entrada:", "Asiento:", "Cantidad:"):
+        lista.heading(col, text=col)
+        lista.column(col, width=120, anchor="center")
+    
+    try:
+        conexion=iniciarConexion(vectorConexion)
+        cursor=conexion.cursor()
+        consulta = """SELECT 
+            pe.fecha_realizacion,
+            ev.titulo, en.tipo,
+            CASE WHEN a.fila IS NULL OR a.columna IS NULL THEN ''
+                 ELSE CONCAT('F', a.fila, '-C', a.columna) END AS asiento,
+            dp.cantidad,
+            en.id_entrada, COALESCE(dp.id_asiento, 0) AS id_asiento
+        FROM Pedido pe
+        JOIN DetallePedido dp ON dp.id_pedido = pe.id_pedido
+        JOIN Entrada en ON en.id_entrada = dp.id_entrada
+        JOIN Evento ev ON ev.id_evento = en.Evento_id
+        LEFT JOIN Asiento a ON a.id_asiento = dp.id_asiento AND dp.id_asiento <> 0
+        WHERE pe.UsuarioID = %s AND pe.estado = 'pagado'
+        """
+
+        resultados = cursor.execute(consulta, (id_usuario,))
+
+        filas = cursor.fetchall()
+
+        if filas:
+            for fila in filas:
+                lista.insert("", "end", values=fila[:5])
+        else:
+            lista.insert("", "end", values=("", "", "No realizaste compras", "",""))
+    except Exception as e:
+        print(e)
+        messagebox.showerror(title="Error", message="Ups! Parece que no podemos mostrar tu historial de compras")
+
+    finally:
+        try:
+            conexion.close()
+            cursor.close()
+        except:
+            pass
 #====================================[EVENTOS Y FAVORITOS]
 #--------------------Crear Ventana Detalles Evento
 def ver_detalles_evento(app, fuente, id_evento, lista, id_usuario):

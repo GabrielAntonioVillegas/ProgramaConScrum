@@ -25,6 +25,6 @@ perfil_usuario.centrarPantalla(500,500,app)
 fuente= ("Source Code Pro")
 
 creacionPantalla_Principal(app,fuente)
-#perfil_usuario.creacionPantalla_MenuUsuario(app,fuente,"a")
+#perfil_usuario.creacionPantalla_MenuUsuario(app,fuente,"maxmun1")
 #panel_administracion.creacionPantalla_MenuOrganizador2(app, fuente, "alumbraEventos", 3)
 app.mainloop()
